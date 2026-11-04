@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { headers } from 'next/headers';
 import {
   ShieldCheck,
@@ -76,9 +77,19 @@ export default async function VerifyTokenPage({ params }: PageProps) {
       <div className="w-full max-w-md">
         {/* En-tête Welj Express Services */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-900/10 text-emerald-900 text-xs font-semibold tracking-wider uppercase mb-2">
+          <div className="inline-flex items-center justify-center bg-white rounded-2xl p-3 shadow-md mb-3 ring-4 ring-emerald-900/10 border border-slate-200">
+            <Image
+              src="/logo.png"
+              alt="Welj Express Services"
+              width={160}
+              height={70}
+              className="h-11 w-auto object-contain"
+              priority
+            />
+          </div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-900/10 text-emerald-900 text-xs font-semibold tracking-wider uppercase mb-2">
             <ShieldCheck size={14} className="text-emerald-700" />
-            Vérificateur Officiel Welj Express
+            Vérificateur Officiel
           </div>
           <h1 className="text-xl font-black text-slate-800 tracking-tight">
             Vérification de Carte

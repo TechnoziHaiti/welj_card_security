@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ShieldCheck,
   QrCode,
@@ -95,8 +96,15 @@ export default function PublicVerifyPage() {
       <div className="w-full max-w-md">
         {/* Brand Banner */}
         <div className="text-center mb-6">
-          <div className="w-14 h-14 bg-emerald-700/80 ring-4 ring-emerald-500/20 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg">
-            <ShieldCheck size={32} className="text-white" />
+          <div className="inline-flex items-center justify-center bg-white rounded-2xl p-3 shadow-lg mb-3 ring-4 ring-emerald-500/20">
+            <Image
+              src="/logo.png"
+              alt="Welj Express Services"
+              width={160}
+              height={70}
+              className="h-12 w-auto object-contain"
+              priority
+            />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-white">
             WELJ EXPRESS SERVICES

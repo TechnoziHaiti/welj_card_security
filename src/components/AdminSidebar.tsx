@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -64,16 +65,25 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
   return (
     <aside className="w-64 bg-emerald-900 text-white flex flex-col min-h-screen shrink-0 shadow-lg">
       {/* Brand Header */}
-      <div className="p-6 border-b border-emerald-800 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-emerald-700/80 border border-emerald-500/40 flex items-center justify-center text-emerald-200">
-          <ShieldCheck size={24} className="text-white" />
-        </div>
-        <div>
-          <h1 className="font-bold text-base tracking-tight leading-none text-white">
-            WELJ EXPRESS
-          </h1>
-          <span className="text-xs text-emerald-300 font-medium tracking-wider uppercase">
+      <div className="p-5 border-b border-emerald-800">
+        <Link href="/admin/dashboard" className="block">
+          <div className="bg-white rounded-xl p-2.5 flex items-center justify-center shadow-md hover:shadow-lg transition-shadow">
+            <Image
+              src="/logo.png"
+              alt="Welj Express Services"
+              width={160}
+              height={70}
+              className="w-auto h-11 object-contain"
+              priority
+            />
+          </div>
+        </Link>
+        <div className="flex items-center justify-between px-1 mt-2.5">
+          <span className="text-[11px] font-bold text-emerald-200 tracking-wider uppercase">
             Card Security
+          </span>
+          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-800 text-emerald-300 border border-emerald-700/80">
+            Portail Officiel
           </span>
         </div>
       </div>

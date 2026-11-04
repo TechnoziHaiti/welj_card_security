@@ -3,6 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   ShieldCheck,
   Lock,
@@ -143,8 +144,15 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-800 text-white shadow-lg mb-4 ring-4 ring-emerald-500/20">
-          <ShieldCheck size={32} />
+        <div className="inline-flex items-center justify-center bg-white rounded-2xl p-3.5 shadow-md mb-4 ring-4 ring-emerald-600/10 border border-slate-200">
+          <Image
+            src="/logo.png"
+            alt="Welj Express Services"
+            width={180}
+            height={80}
+            className="h-14 w-auto object-contain"
+            priority
+          />
         </div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">
           WELJ EXPRESS SERVICES
