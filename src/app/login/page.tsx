@@ -10,7 +10,7 @@ import {
   ArrowRight,
   AlertCircle,
   Loader2,
-  ArrowLeft,
+  QrCode,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -120,7 +120,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-all disabled:opacity-60"
+          className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-all disabled:opacity-60 cursor-pointer"
         >
           {loading ? (
             <>
@@ -143,11 +143,9 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <Link href="/" className="inline-flex items-center gap-2 mb-4 group">
-          <div className="w-12 h-12 rounded-2xl bg-emerald-800 flex items-center justify-center text-white shadow-md group-hover:bg-emerald-700 transition-colors">
-            <ShieldCheck size={28} />
-          </div>
-        </Link>
+        <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-emerald-800 text-white shadow-lg mb-4 ring-4 ring-emerald-500/20">
+          <ShieldCheck size={32} />
+        </div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">
           WELJ EXPRESS SERVICES
         </h1>
@@ -164,18 +162,19 @@ export default function LoginPage() {
 
           <div className="mt-6 border-t border-slate-100 pt-4 text-center">
             <p className="text-[11px] text-slate-500">
-              Accès strictement restreint aux membres du personnel habilité de Welj Express Services.
+              Accès strictement restreint au personnel habilité de Welj Express Services.
             </p>
           </div>
         </div>
 
+        {/* Accès rapide au vérificateur public pour les agents */}
         <div className="mt-6 text-center">
           <Link
-            href="/"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-emerald-800 transition-colors"
+            href="/verify"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-300 shadow-sm transition-all hover:text-emerald-800"
           >
-            <ArrowLeft size={13} />
-            <span>Retour au portail d&apos;accueil</span>
+            <QrCode size={15} className="text-emerald-700" />
+            <span>Accéder au Vérificateur Public de Cartes</span>
           </Link>
         </div>
       </div>

@@ -289,11 +289,11 @@ export default async function VerifyTokenPage({ params }: PageProps) {
           </Link>
 
           <Link
-            href="/"
+            href="/login"
             className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors"
           >
             <ArrowLeft size={13} />
-            <span>Retour à l&apos;accueil Welj</span>
+            <span>Accès Administrateur Welj</span>
           </Link>
         </div>
 

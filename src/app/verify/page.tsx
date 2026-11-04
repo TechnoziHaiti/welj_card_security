@@ -215,11 +215,11 @@ export default function PublicVerifyPage() {
         {/* Lien de retour et mention légale */}
         <div className="mt-6 flex flex-col items-center gap-2">
           <Link
-            href="/"
+            href="/login"
             className="inline-flex items-center gap-1.5 text-xs text-emerald-200 hover:text-white transition-colors"
           >
             <ArrowLeft size={13} />
-            <span>Portail d&apos;accueil Welj</span>
+            <span>Accès Espace Administrateur</span>
           </Link>
           <p className="text-[10px] text-emerald-400 font-mono mt-1">
             Welj Express Services &bull; Module de sécurité v1.0
