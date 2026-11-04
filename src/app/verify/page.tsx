@@ -206,16 +206,22 @@ export default function PublicVerifyPage() {
             )}
           </form>
 
-          {/* Règles de sécurité */}
-          <div className="mt-5 p-3.5 bg-slate-50 border border-slate-200/80 rounded-xl">
-            <h3 className="text-xs font-bold text-slate-700 flex items-center gap-1.5 mb-1.5">
-              <CheckCircle size={14} className="text-emerald-600" />
-              Consignes aux agents de contrôle
+          {/* Consignes de sécurité officielles */}
+          <div className="mt-5 p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl">
+            <h3 className="text-xs font-bold text-emerald-950 flex items-center gap-1.5 mb-1.5">
+              <ShieldCheck size={15} className="text-emerald-700 shrink-0" />
+              Consignes Officielles de Sécurité Welj
             </h3>
-            <ul className="text-[11px] text-slate-600 space-y-1 list-disc list-inside">
-              <li>Toujours vérifier que l&apos;URL commence par le domaine officiel Welj.</li>
-              <li>Ne jamais se fier aux mentions imprimées sans confirmation en ligne.</li>
-              <li>Une carte révoquée ou expirée doit être refusée immédiatement.</li>
+            <ul className="text-[11px] text-emerald-900 space-y-1 list-disc list-inside leading-relaxed">
+              <li>
+                <strong>Scanner officiel étanche :</strong> Ce scanner interroge directement le registre Supabase et neutralise toute tentative de faux site ou clone externe.
+              </li>
+              <li>
+                <strong>Vérification physique :</strong> Contrôlez que le Nom et la Date d&apos;expiration sur cet écran correspondent à la carte Badgy.
+              </li>
+              <li>
+                <strong>Code dynamique 30 min :</strong> Le code et l&apos;horloge en direct certifient la fraîcheur du contrôle à la seconde près.
+              </li>
             </ul>
           </div>
         </div>
