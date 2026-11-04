@@ -3,7 +3,6 @@
 import React, { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
   ShieldCheck,
   Lock,
@@ -49,7 +48,12 @@ function LoginForm() {
       }
 
       if (data.user) {
-        router.push(redirectTo);
+        const userRole = data.user.user_metadata?.role;
+        if (userRole === 'agent') {
+          router.push('/verify');
+        } else {
+          router.push(redirectTo);
+        }
         router.refresh();
       }
     } catch (err: any) {
@@ -63,12 +67,12 @@ function LoginForm() {
       <div>
         <label
           htmlFor="email"
-          className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5"
+          className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5"
         >
           Adresse Email Administrateur
         </label>
         <div className="relative rounded-xl shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
             <Mail size={17} />
           </div>
           <input
@@ -80,7 +84,7 @@ function LoginForm() {
             placeholder="admin@welj-express.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="block w-full pl-10 pr-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
+            className="block w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-950/80 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
           />
         </div>
       </div>
@@ -88,12 +92,12 @@ function LoginForm() {
       <div>
         <label
           htmlFor="password"
-          className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5"
+          className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5"
         >
           Mot de Passe
         </label>
         <div className="relative rounded-xl shadow-sm">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
             <Lock size={17} />
           </div>
           <input
@@ -105,14 +109,14 @@ function LoginForm() {
             placeholder="••••••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="block w-full pl-10 pr-3.5 py-2.5 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none transition-all placeholder:text-slate-400"
+            className="block w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-950/80 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
           />
         </div>
       </div>
 
       {error && (
-        <div className="rounded-xl bg-rose-50 border border-rose-200 p-3.5 flex items-start gap-2.5 text-rose-800 text-xs">
-          <AlertCircle size={16} className="shrink-0 mt-0.5 text-rose-600" />
+        <div className="rounded-xl bg-rose-500/10 border border-rose-500/30 p-3.5 flex items-start gap-2.5 text-rose-300 text-xs">
+          <AlertCircle size={16} className="shrink-0 mt-0.5 text-rose-400" />
           <span>{error}</span>
         </div>
       )}
@@ -121,7 +125,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-md text-sm font-bold text-white bg-emerald-700 hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-600 transition-all disabled:opacity-60 cursor-pointer"
+          className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-blue-950/50 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-60 cursor-pointer"
         >
           {loading ? (
             <>
@@ -142,33 +146,26 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-b from-[#010101] via-[#020617] to-[#0a152f] flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-white">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <div className="inline-flex items-center justify-center bg-white rounded-2xl p-3.5 shadow-md mb-4 ring-4 ring-emerald-600/10 border border-slate-200">
-          <Image
-            src="/logo.png"
-            alt="Welj Express Services"
-            width={180}
-            height={80}
-            className="h-14 w-auto object-contain"
-            priority
-          />
-        </div>
-        <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+        <span className="inline-block px-3 py-1 rounded-full bg-blue-950/80 border border-blue-800/60 text-blue-400 text-[11px] font-black tracking-widest uppercase mb-2 shadow-sm">
           WELJ EXPRESS SERVICES
+        </span>
+        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+          Espace d&apos;Administration
         </h1>
-        <p className="mt-1 text-xs text-emerald-800 font-semibold tracking-wider uppercase">
-          Espace d&apos;Administration Sécurisé
+        <p className="mt-1 text-xs text-slate-400 font-medium">
+          Connexion sécurisée au registre officiel
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4">
-        <div className="bg-white py-8 px-6 shadow-xl rounded-2xl sm:px-10 border border-slate-200">
+        <div className="bg-[#0b1329]/80 backdrop-blur-md py-8 px-6 shadow-2xl rounded-2xl sm:px-10 border border-slate-800/80">
           <Suspense fallback={<div className="py-8 text-center text-xs text-slate-400">Chargement...</div>}>
             <LoginForm />
           </Suspense>
 
-          <div className="mt-6 border-t border-slate-100 pt-4 text-center">
+          <div className="mt-6 border-t border-slate-800/80 pt-4 text-center">
             <p className="text-[11px] text-slate-500">
               Accès strictement restreint au personnel habilité de Welj Express Services.
             </p>
@@ -179,9 +176,9 @@ export default function LoginPage() {
         <div className="mt-6 text-center">
           <Link
             href="/verify"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold border border-slate-300 shadow-sm transition-all hover:text-emerald-800"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-slate-300 text-xs font-semibold border border-slate-800 shadow-sm transition-all hover:text-white"
           >
-            <QrCode size={15} className="text-emerald-700" />
+            <QrCode size={15} className="text-blue-400" />
             <span>Accéder au Vérificateur Public de Cartes</span>
           </Link>
         </div>

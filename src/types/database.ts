@@ -1,4 +1,4 @@
-export type AccountType = 'Standard' | 'Premium' | 'VIP' | 'Entreprise';
+export type AccountType = 'Platinum' | 'Gold' | 'Silver' | 'Bronze' | 'Standard' | 'Premium' | 'VIP' | 'Entreprise';
 export type MemberStatus = 'actif' | 'inactif' | 'suspendu';
 export type CardStatus = 'active' | 'expiree' | 'revoquee' | 'en_attente';
 export type VerificationResultType = 'valide' | 'expiree' | 'revoquee' | 'inconnue';
@@ -15,6 +15,7 @@ export interface Profile {
 export interface Member {
   id: string;
   member_code: string;
+  client_code?: string | null;
   first_name: string;
   last_name: string;
   account_type: AccountType;

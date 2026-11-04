@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import {
-  UserCheck,
   UserPlus,
   Mail,
   Lock,
@@ -14,7 +13,7 @@ import {
   X,
   Search,
   KeyRound,
-  Calendar,
+  ShieldAlert,
 } from 'lucide-react';
 import { formatDateFr } from '@/lib/dates';
 
@@ -46,8 +45,9 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Suppression
+  // Suppression et modification de rôle
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +73,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
       }
 
       setUsers([data.user, ...users]);
-      setSuccessMsg(`L'accès pour ${data.user.email} (${data.user.role}) a été créé avec succès.`);
+      setSuccessMsg(`L'accès pour ${data.user.email} (${data.user.role === 'admin' ? 'Administrateur' : 'Agent de Contrôle'}) a été configuré avec succès.`);
       setShowModal(false);
       setFullName('');
       setEmail('');
@@ -83,6 +83,33 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
       setError(err.message || 'Une erreur est survenue.');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleRoleChange = async (targetUser: UserData, newRole: 'admin' | 'agent') => {
+    if (targetUser.id === currentUserId) return;
+    setUpdatingRoleId(targetUser.id);
+    setError(null);
+    setSuccessMsg(null);
+
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: targetUser.id, role: newRole }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Erreur lors de la modification du rôle.');
+      }
+
+      setUsers(users.map((u) => (u.id === targetUser.id ? { ...u, role: newRole } : u)));
+      setSuccessMsg(`Rôle mis à jour pour ${targetUser.email} : ${newRole === 'admin' ? 'Administrateur' : 'Agent de Contrôle (Lecture)'}.`);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors du changement de rôle.');
+    } finally {
+      setUpdatingRoleId(null);
     }
   };
 
@@ -134,11 +161,11 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <KeyRound size={24} className="text-emerald-700" />
+            <KeyRound size={24} className="text-blue-600" />
             Gestion des Accès &amp; Utilisateurs
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Donnez accès à d&apos;autres membres du personnel en configurant leur email, mot de passe et rôle.
+          <p className="text-xs text-slate-600 mt-1">
+            Contrôle strict des rôles : Administrateur (pleins pouvoirs) ou Agent de Contrôle (vérification et lecture seule).
           </p>
         </div>
 
@@ -147,7 +174,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
             setError(null);
             setShowModal(true);
           }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
         >
           <UserPlus size={16} />
           <span>Donner un nouvel accès</span>
@@ -161,8 +188,8 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
             <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
             <span>{successMsg}</span>
           </div>
-          <button onClick={() => setSuccessMsg(null)} className="text-emerald-700 hover:text-emerald-900">
-            <X size={15} />
+          <button onClick={() => setSuccessMsg(null)} className="text-slate-400 hover:text-slate-700">
+            <X size={14} />
           </button>
         </div>
       )}
@@ -173,54 +200,55 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
             <AlertCircle size={16} className="text-rose-600 shrink-0" />
             <span>{error}</span>
           </div>
-          <button onClick={() => setError(null)} className="text-rose-700 hover:text-rose-900">
-            <X size={15} />
+          <button onClick={() => setError(null)} className="text-slate-400 hover:text-slate-700">
+            <X size={14} />
           </button>
         </div>
       )}
 
-      {/* Recherche */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-3">
-        <div className="relative flex-1">
-          <Search size={16} className="absolute left-3.5 top-3 text-slate-400" />
+      {/* Barre de recherche */}
+      <div className="bg-white p-4 rounded-2xl border border-stone-300/80 shadow-sm">
+        <div className="relative">
+          <Search size={16} className="absolute left-3.5 top-3 text-stone-400" />
           <input
             type="text"
-            placeholder="Rechercher un utilisateur par nom, email ou rôle..."
+            placeholder="Filtrer par nom, adresse email ou rôle..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+            className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
           />
         </div>
       </div>
 
-      {/* Tableau des Utilisateurs */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+      {/* Tableau des utilisateurs */}
+      <div className="bg-white rounded-2xl border border-stone-300/80 shadow-sm overflow-hidden">
         {filteredUsers.length === 0 ? (
-          <div className="p-12 text-center text-slate-400 text-xs">
-            <UserCheck size={32} className="mx-auto mb-2 text-slate-300" />
-            <p className="font-semibold text-slate-600">Aucun utilisateur trouvé</p>
+          <div className="p-8 text-center text-slate-500 text-xs">
+            Aucun compte trouvé correspondant aux critères.
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-stone-100 text-stone-600 uppercase text-[10px] tracking-wider border-b border-stone-200 font-semibold">
+                <tr>
                   <th className="py-3.5 px-4">Utilisateur</th>
                   <th className="py-3.5 px-4">Email</th>
-                  <th className="py-3.5 px-4">Niveau d&apos;Accès</th>
+                  <th className="py-3.5 px-4">Niveau d&apos;Accès &amp; Droits</th>
                   <th className="py-3.5 px-4">Date de Création</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-700">
+              <tbody className="divide-y divide-stone-200 text-slate-800">
                 {filteredUsers.map((user) => {
                   const isCurrent = user.id === currentUserId;
 
                   return (
-                    <tr key={user.id} className="hover:bg-slate-50/80 transition-colors">
+                    <tr key={user.id} className="hover:bg-stone-50 transition-colors">
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5">
-                          <div className="w-8 h-8 rounded-full bg-emerald-800 text-white font-bold text-xs flex items-center justify-center shrink-0">
+                          <div className={`w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center shrink-0 ${
+                            user.role === 'admin' ? 'bg-blue-600 text-white' : 'bg-stone-200 text-slate-800 border border-stone-300'
+                          }`}>
                             {user.full_name[0]?.toUpperCase() || 'U'}
                           </div>
                           <div>
@@ -228,26 +256,41 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                               {user.full_name}
                             </span>
                             {isCurrent && (
-                              <span className="text-[10px] text-emerald-700 font-semibold">
+                              <span className="text-[10px] text-blue-600 font-semibold">
                                 (Votre compte actuel)
                               </span>
                             )}
                           </div>
                         </div>
                       </td>
-                      <td className="py-3 px-4 font-mono text-slate-800">
+                      <td className="py-3 px-4 font-mono text-slate-600">
                         {user.email || '-'}
                       </td>
                       <td className="py-3 px-4">
-                        {user.role === 'admin' ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-600/20">
-                            <Shield size={12} className="text-emerald-600" />
-                            Administrateur
+                        {isCurrent ? (
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600">
+                            <Shield size={13} className="text-blue-600" />
+                            Administrateur (Vous)
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 ring-1 ring-blue-600/20">
-                            Agent de Contrôle
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <select
+                              value={user.role}
+                              disabled={updatingRoleId === user.id}
+                              onChange={(e) => handleRoleChange(user, e.target.value as 'admin' | 'agent')}
+                              className={`px-2.5 py-1 text-xs rounded-lg border bg-white font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-colors cursor-pointer ${
+                                user.role === 'admin'
+                                  ? 'border-blue-500 text-blue-700 font-bold bg-blue-50/40'
+                                  : 'border-stone-300 text-slate-700'
+                              }`}
+                            >
+                              <option value="agent">Agent de Contrôle (Lecture)</option>
+                              <option value="admin">Administrateur (Tous droits)</option>
+                            </select>
+                            {updatingRoleId === user.id && (
+                              <Loader2 size={13} className="animate-spin text-blue-600" />
+                            )}
+                          </div>
                         )}
                       </td>
                       <td className="py-3 px-4 text-slate-500">
@@ -258,7 +301,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                           <button
                             onClick={() => handleDeleteUser(user)}
                             disabled={deletingId === user.id}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-[11px] font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-semibold transition-colors disabled:opacity-50 cursor-pointer"
                             title="Révoquer cet accès"
                           >
                             {deletingId === user.id ? (
@@ -283,22 +326,22 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
 
       {/* Modal Création Nouvel Accès */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-stone-300 text-slate-900">
             {/* Modal Header */}
-            <div className="bg-emerald-800 text-white p-5 flex items-center justify-between">
+            <div className="bg-stone-50 text-slate-900 p-5 flex items-center justify-between border-b border-stone-200">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-emerald-700/80 rounded-lg">
-                  <UserPlus size={20} className="text-emerald-200" />
+                <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <UserPlus size={20} className="text-blue-600" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold leading-tight">Donner un Nouvel Accès</h3>
-                  <p className="text-xs text-emerald-200">Création de compte administrateur ou agent</p>
+                  <p className="text-xs text-slate-500">Création de compte administrateur ou agent</p>
                 </div>
               </div>
               <button
                 onClick={() => setShowModal(false)}
-                className="p-1 rounded-lg text-emerald-200 hover:text-white hover:bg-emerald-700/60 transition-colors"
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-stone-100 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -316,7 +359,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                   placeholder="Ex: Jean Dupont"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -325,14 +368,14 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                   Adresse Email *
                 </label>
                 <div className="relative">
-                  <Mail size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                  <Mail size={16} className="absolute left-3.5 top-3 text-stone-400" />
                   <input
                     type="email"
                     required
                     placeholder="agent@welj-express.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                    className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                 </div>
               </div>
@@ -342,7 +385,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                   Mot de Passe Initial *
                 </label>
                 <div className="relative">
-                  <Lock size={16} className="absolute left-3.5 top-3 text-slate-400" />
+                  <Lock size={16} className="absolute left-3.5 top-3 text-stone-400" />
                   <input
                     type="password"
                     required
@@ -350,7 +393,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                     placeholder="Minimum 6 caractères"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none"
+                    className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                 </div>
               </div>
@@ -362,18 +405,23 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                 <select
                   value={role}
                   onChange={(e) => setRole(e.target.value as 'admin' | 'agent')}
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none bg-white"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 >
-                  <option value="agent">Agent de Contrôle (Accès vérification & lecture)</option>
+                  <option value="agent">Agent de Contrôle (Accès vérification &amp; lecture)</option>
                   <option value="admin">Administrateur (Gestion totale, cartes et membres)</option>
                 </select>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  {role === 'agent'
+                    ? 'L\'agent aura accès au scanner et pourra consulter les membres, sans pouvoir modifier ou supprimer.'
+                    : 'L\'administrateur aura tous les accès, y compris la gestion des utilisateurs et suppression.'}
+                </p>
               </div>
 
               <div className="pt-3 flex gap-2 justify-end">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50 transition-colors"
+                  className="px-4 py-2.5 rounded-xl border border-stone-300 text-slate-700 text-xs font-semibold hover:bg-stone-100 transition-colors cursor-pointer"
                 >
                   Annuler
                 </button>
@@ -381,7 +429,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-md disabled:opacity-60 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm disabled:opacity-60 cursor-pointer"
                 >
                   {loading ? (
                     <>

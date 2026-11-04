@@ -1,6 +1,7 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentUserRole } from '@/lib/auth-helpers';
 import { CardsListClient } from './CardsListClient';
 import { Card, Member } from '@/types/database';
 
@@ -39,6 +40,7 @@ export default async function CardsPage({ searchParams }: PageProps) {
     console.error('Erreur chargement cartes:', err);
   }
 
+  const { isAdmin } = await getCurrentUserRole();
   const initialFilter = expiring === 'true' ? 'expiring' : status || 'all';
 
   return (
@@ -46,6 +48,7 @@ export default async function CardsPage({ searchParams }: PageProps) {
       initialCards={cards}
       currentStatusFilter={initialFilter}
       searchQuery={q || ''}
+      isAdmin={isAdmin}
     />
   );
 }

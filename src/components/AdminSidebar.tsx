@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
@@ -11,9 +10,8 @@ import {
   History,
   QrCode,
   LogOut,
-  ShieldCheck,
-  ExternalLink,
   KeyRound,
+  Shield,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -28,12 +26,16 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
   const router = useRouter();
   const supabase = createClient();
 
+  const isAdmin = userRole === 'admin';
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     router.push('/login');
     router.refresh();
   };
 
+  // Les agents ont accès au tableau de bord, au scanner, à la consultation des membres, cartes et historique.
+  // SEUL l'administrateur a accès à "Gestion des Accès" (/admin/users).
   const navItems = [
     {
       label: 'Tableau de bord',
@@ -41,12 +43,17 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
       icon: LayoutDashboard,
     },
     {
-      label: 'Membres',
+      label: 'Scanner de Cartes (Direct)',
+      href: '/verify',
+      icon: QrCode,
+    },
+    {
+      label: isAdmin ? 'Membres' : 'Membres (Lecture)',
       href: '/admin/members',
       icon: Users,
     },
     {
-      label: 'Cartes Welj',
+      label: isAdmin ? 'Cartes Welj' : 'Cartes Welj (Lecture)',
       href: '/admin/cards',
       icon: CreditCard,
     },
@@ -55,43 +62,32 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
       href: '/admin/history',
       icon: History,
     },
-    {
-      label: 'Gestion des Accès',
-      href: '/admin/users',
-      icon: KeyRound,
-    },
+    ...(isAdmin
+      ? [
+          {
+            label: 'Gestion des Accès',
+            href: '/admin/users',
+            icon: KeyRound,
+          },
+        ]
+      : []),
   ];
 
   return (
-    <aside className="w-64 bg-emerald-900 text-white flex flex-col min-h-screen shrink-0 shadow-lg">
+    <aside className="w-64 h-full bg-slate-950 text-white flex flex-col shrink-0 border-r border-slate-800/80 shadow-2xl select-none">
       {/* Brand Header */}
-      <div className="p-5 border-b border-emerald-800">
-        <Link href="/admin/dashboard" className="block">
-          <div className="bg-white rounded-xl p-2.5 flex items-center justify-center shadow-md hover:shadow-lg transition-shadow">
-            <Image
-              src="/logo.png"
-              alt="Welj Express Services"
-              width={160}
-              height={70}
-              className="w-auto h-11 object-contain"
-              priority
-            />
-          </div>
+      <div className="p-5 border-b border-slate-800/80 shrink-0">
+        <Link href="/admin/dashboard" className="block group">
+          <span className="text-sm font-black tracking-wider text-white uppercase block leading-snug group-hover:text-blue-400 transition-colors">
+            WELJ EXPRESS SERVICES
+          </span>
         </Link>
-        <div className="flex items-center justify-between px-1 mt-2.5">
-          <span className="text-[11px] font-bold text-emerald-200 tracking-wider uppercase">
-            Card Security
-          </span>
-          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-800 text-emerald-300 border border-emerald-700/80">
-            Portail Officiel
-          </span>
-        </div>
       </div>
 
-      {/* Navigation */}
-      <nav className="flex-1 p-4 space-y-1.5">
-        <div className="px-3 py-2 text-[11px] font-semibold tracking-wider text-emerald-300 uppercase">
-          Administration
+      {/* Navigation avec scroll interne si nécessaire */}
+      <nav className="flex-1 p-4 space-y-1.5 overflow-y-auto">
+        <div className="px-3 py-2 text-[10px] font-bold tracking-widest text-slate-400 uppercase">
+          {isAdmin ? 'Administration' : 'Espace Contrôle'}
         </div>
         {navItems.map((item) => {
           const isActive = pathname === item.href || (item.href !== '/admin/dashboard' && pathname.startsWith(item.href));
@@ -100,47 +96,38 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              className={`flex items-center gap-3 px-3 py-2 text-sm font-semibold transition-colors ${
                 isActive
-                  ? 'bg-emerald-800 text-white shadow-sm'
-                  : 'text-emerald-100/80 hover:bg-emerald-800/50 hover:text-white'
+                  ? 'text-blue-400 font-bold'
+                  : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Icon size={18} className={isActive ? 'text-emerald-300' : 'text-emerald-300/70'} />
+              <Icon size={18} className={isActive ? 'text-blue-400' : 'text-slate-400'} />
               <span>{item.label}</span>
             </Link>
           );
         })}
-
-        <div className="pt-5 px-3 py-2 text-[11px] font-semibold tracking-wider text-emerald-300 uppercase">
-          Accès Public
-        </div>
-        <Link
-          href="/verify"
-          target="_blank"
-          className="flex items-center justify-between px-3.5 py-2.5 rounded-lg text-sm font-medium text-emerald-100/80 hover:bg-emerald-800/50 hover:text-white transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <QrCode size={18} className="text-emerald-300/70" />
-            <span>Vérificateur public</span>
-          </div>
-          <ExternalLink size={14} className="text-emerald-300/50" />
-        </Link>
       </nav>
 
-      {/* User info & Logout */}
-      <div className="p-4 border-t border-emerald-800 bg-emerald-950/40">
+      {/* User info & Logout fixé en bas */}
+      <div className="p-4 border-t border-slate-800/80 bg-black/60 shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-full bg-emerald-700 flex items-center justify-center text-xs font-bold text-white shrink-0">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
+              isAdmin ? 'bg-blue-600' : 'bg-slate-700 border border-slate-600'
+            }`}>
               {(userName || userEmail || 'W')[0].toUpperCase()}
             </div>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold text-white truncate">
-                {userName || userEmail?.split('@')[0] || 'Administrateur'}
+                {userName || userEmail?.split('@')[0] || (isAdmin ? 'Administrateur' : 'Agent')}
               </p>
-              <p className="text-[11px] text-emerald-300 truncate capitalize">
-                {userRole || 'Admin'}
+              <p className="text-[11px] text-slate-400 truncate flex items-center gap-1">
+                {isAdmin ? (
+                  <span className="text-blue-400 font-medium">Administrateur</span>
+                ) : (
+                  <span className="text-slate-300 font-medium">Agent de Contrôle (Lecture)</span>
+                )}
               </p>
             </div>
           </div>
@@ -148,7 +135,7 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
 
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-medium text-emerald-200 bg-emerald-900/60 hover:bg-emerald-800 rounded-lg transition-colors border border-emerald-700/50"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-300 bg-slate-900 hover:bg-slate-800 hover:text-white rounded-xl transition-colors border border-slate-800 cursor-pointer"
         >
           <LogOut size={14} />
           <span>Déconnexion</span>

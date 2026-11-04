@@ -31,9 +31,10 @@ import { Member, Card, MemberStatus, AccountType } from '@/types/database';
 interface Props {
   initialMember: Member;
   initialCards: Card[];
+  isAdmin?: boolean;
 }
 
-export function MemberDetailClient({ initialMember, initialCards }: Props) {
+export function MemberDetailClient({ initialMember, initialCards, isAdmin = true }: Props) {
   const router = useRouter();
   const supabase = createClient();
 
@@ -274,7 +275,7 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
         <div className="flex items-center gap-3">
           <Link
             href="/admin/members"
-            className="p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 transition-colors shadow-sm"
+            className="p-2 rounded-xl bg-white hover:bg-stone-50 border border-stone-300 text-slate-700 transition-colors shadow-sm"
           >
             <ArrowLeft size={16} />
           </Link>
@@ -285,22 +286,28 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
               </h1>
               <StatusBadge status={member.status} size="sm" />
             </div>
-            <p className="text-xs text-slate-500 font-mono mt-0.5">
-              Code Officiel : <span className="font-bold text-emerald-800">{member.member_code}</span> &bull; Adhérent depuis le {formatDateFr(member.created_at)}
+            <p className="text-xs text-slate-600 font-mono mt-0.5">
+              Code de la Carte : <span className="font-bold text-blue-600">{member.member_code}</span> &bull; Adhérent depuis le {formatDateFr(member.created_at)}
             </p>
           </div>
         </div>
 
         {/* Action Rapide Création Carte */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={handleCreateNewCard}
-            disabled={actionLoading || member.status !== 'actif'}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
-          >
-            <PlusCircle size={15} />
-            <span>Émettre une carte</span>
-          </button>
+          {isAdmin ? (
+            <button
+              onClick={handleCreateNewCard}
+              disabled={actionLoading || member.status !== 'actif'}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
+            >
+              <PlusCircle size={15} />
+              <span>Émettre une carte</span>
+            </button>
+          ) : (
+            <div className="px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-[11px] text-slate-600 font-medium shadow-sm">
+              Mode Consultation (Lecture seule)
+            </div>
+          )}
         </div>
       </div>
 
@@ -313,7 +320,7 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
               : 'bg-rose-50 text-rose-800 border-rose-200'
           }`}
         >
-          {message.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
+          {message.type === 'success' ? <CheckCircle2 size={16} className="text-emerald-600" /> : <AlertCircle size={16} className="text-rose-600" />}
           <span>{message.text}</span>
         </div>
       )}
@@ -321,16 +328,16 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
       {/* Grid: Infos Membre et Carte Active */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Colonne 1: Fiche du Membre */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+        <div className="bg-white rounded-2xl border border-stone-300/80 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <User size={16} className="text-emerald-700" />
+              <User size={16} className="text-blue-600" />
               Informations du Membre
             </h2>
-            {!isEditing ? (
+            {isAdmin && (!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
-                className="p-1.5 rounded-lg text-slate-500 hover:text-emerald-800 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-lg text-stone-400 hover:text-blue-600 hover:bg-stone-100 transition-colors"
                 title="Modifier"
               >
                 <Edit2 size={15} />
@@ -338,48 +345,48 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
             ) : (
               <button
                 onClick={() => setIsEditing(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+                className="p-1.5 rounded-lg text-stone-400 hover:text-slate-800 hover:bg-stone-100 transition-colors"
                 title="Annuler"
               >
                 <X size={15} />
               </button>
-            )}
+            ))}
           </div>
 
           {!isEditing ? (
             <div className="space-y-4 text-xs">
               <div>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
-                  Code Membre Unique
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  Code de la Carte
                 </span>
-                <span className="font-mono font-bold text-emerald-900 text-sm mt-0.5 block">
+                <span className="font-mono font-bold text-blue-600 text-sm mt-0.5 block">
                   {member.member_code}
                 </span>
-                <span className="text-[10px] text-slate-400">
-                  Code immuable, attribué de manière séquentielle et atomique.
+                <span className="text-[10px] text-slate-500">
+                  Code officiel de la carte, attribué de manière séquentielle et atomique.
                 </span>
               </div>
 
               <div>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
                   Nom et Prénom
                 </span>
-                <span className="font-semibold text-slate-800 text-sm mt-0.5 block">
+                <span className="font-semibold text-slate-900 text-sm mt-0.5 block">
                   {member.last_name} {member.first_name}
                 </span>
               </div>
 
               <div>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
                   Type de Compte
                 </span>
-                <span className="inline-block mt-1 px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 font-semibold text-xs">
+                <span className="inline-block mt-1 px-2.5 py-1 rounded-md bg-stone-100 border border-stone-200 text-slate-800 font-semibold text-xs">
                   {member.account_type}
                 </span>
               </div>
 
               <div>
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
                   Statut du Compte
                 </span>
                 <div className="mt-1 flex items-center gap-2">
@@ -387,45 +394,47 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-slate-100">
-                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
-                  Actions sur le compte
-                </span>
-                <div className="flex gap-2">
-                  {member.status === 'actif' ? (
-                    <button
-                      onClick={() => handleToggleMemberStatus('inactif')}
-                      disabled={actionLoading}
-                      className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-[11px] border border-amber-200 transition-colors"
-                    >
-                      Désactiver le compte
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleToggleMemberStatus('actif')}
-                      disabled={actionLoading}
-                      className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] border border-emerald-200 transition-colors"
-                    >
-                      Réactiver le compte
-                    </button>
-                  )}
+              {isAdmin && (
+                <div className="pt-4 border-t border-stone-200">
+                  <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-2">
+                    Actions sur le compte
+                  </span>
+                  <div className="flex gap-2">
+                    {member.status === 'actif' ? (
+                      <button
+                        onClick={() => handleToggleMemberStatus('inactif')}
+                        disabled={actionLoading}
+                        className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-[11px] border border-amber-200 transition-colors"
+                      >
+                        Désactiver le compte
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleToggleMemberStatus('actif')}
+                        disabled={actionLoading}
+                        className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-[11px] border border-blue-200 transition-colors"
+                      >
+                        Réactiver le compte
+                      </button>
+                    )}
 
-                  {member.status !== 'suspendu' && (
-                    <button
-                      onClick={() => handleToggleMemberStatus('suspendu')}
-                      disabled={actionLoading}
-                      className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 font-semibold text-[11px] border border-rose-200 transition-colors"
-                    >
-                      Suspendre
-                    </button>
-                  )}
+                    {member.status !== 'suspendu' && (
+                      <button
+                        onClick={() => handleToggleMemberStatus('suspendu')}
+                        disabled={actionLoading}
+                        className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-[11px] border border-rose-200 transition-colors"
+                      >
+                        Suspendre
+                      </button>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           ) : (
             <form onSubmit={handleSaveMember} className="space-y-4 text-xs">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                   Nom de famille
                 </label>
                 <input
@@ -433,12 +442,12 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
                   required
                   value={editLastName}
                   onChange={(e) => setEditLastName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none"
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                   Prénom
                 </label>
                 <input
@@ -446,23 +455,23 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
                   required
                   value={editFirstName}
                   onChange={(e) => setEditFirstName(e.target.value)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none"
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-600 uppercase mb-1">
+                <label className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                   Type de compte
                 </label>
                 <select
                   value={editAccountType}
                   onChange={(e) => setEditAccountType(e.target.value as AccountType)}
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-600 outline-none bg-white"
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
                 >
-                  <option value="Standard">Standard</option>
-                  <option value="Premium">Premium</option>
-                  <option value="VIP">VIP</option>
-                  <option value="Entreprise">Entreprise</option>
+                  <option value="Platinum">Platinum</option>
+                  <option value="Gold">Gold</option>
+                  <option value="Silver">Silver</option>
+                  <option value="Bronze">Bronze</option>
                 </select>
               </div>
 
@@ -470,7 +479,7 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-semibold transition-colors disabled:opacity-60"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-60 shadow-sm"
                 >
                   {savingEdit ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                   <span>Enregistrer</span>
@@ -478,7 +487,7 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-3 py-2 border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors"
+                  className="px-3 py-2 border border-stone-300 text-slate-700 rounded-xl hover:bg-stone-100 transition-colors"
                 >
                   Annuler
                 </button>
@@ -490,19 +499,19 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
         {/* Colonne 2 & 3: Carte Active et Historique des cartes */}
         <div className="lg:col-span-2 space-y-6">
           {/* Carte Actuelle */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div className="bg-white rounded-2xl border border-stone-300/80 shadow-sm p-6">
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-4">
-              <CreditCard size={16} className="text-emerald-700" />
+              <CreditCard size={16} className="text-blue-600" />
               Carte Active Actuelle
             </h2>
 
             {activeCard ? (
-              <div className="bg-gradient-to-br from-emerald-900 to-emerald-800 text-white rounded-2xl p-6 shadow-md relative overflow-hidden">
-                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-36 h-36 bg-emerald-700/30 rounded-full blur-xl pointer-events-none" />
+              <div className="bg-gradient-to-br from-[#0a152f] via-[#112349] to-[#19305d] text-white rounded-2xl p-6 shadow-xl border border-blue-800/50 relative overflow-hidden">
+                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-36 h-36 bg-blue-500/20 rounded-full blur-xl pointer-events-none" />
 
                 <div className="flex items-start justify-between relative z-10 mb-6">
                   <div>
-                    <span className="text-[10px] text-emerald-300 font-mono tracking-widest uppercase block">
+                    <span className="text-[10px] text-blue-300 font-mono tracking-widest uppercase block">
                       WELJ CARD SECURITY &bull; CARTE OFFICIELLE
                     </span>
                     <h3 className="text-xl font-mono font-bold tracking-wider mt-1 text-white">
@@ -512,82 +521,88 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
                   <StatusBadge status="active" size="sm" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-xs relative z-10 pt-2 border-t border-emerald-700/60">
+                <div className="grid grid-cols-2 gap-4 text-xs relative z-10 pt-2 border-t border-blue-800/60">
                   <div>
-                    <span className="text-[10px] text-emerald-300 uppercase block">Titulaire</span>
+                    <span className="text-[10px] text-blue-300 uppercase block">Titulaire</span>
                     <span className="font-bold text-sm block">{member.first_name} {member.last_name}</span>
-                    <span className="text-[11px] font-mono text-emerald-200">Code : {member.member_code}</span>
+                    <span className="text-[11px] font-mono text-blue-200">Code Carte : {member.member_code}</span>
                   </div>
                   <div className="text-right">
-                    <span className="text-[10px] text-emerald-300 uppercase block">Validité</span>
-                    <span className="text-[11px] text-emerald-200 block">Du {formatDateFr(activeCard.created_at)}</span>
-                    <span className="font-bold text-emerald-100 block">Au {formatDateFr(activeCard.expires_at)}</span>
+                    <span className="text-[10px] text-blue-300 uppercase block">Validité</span>
+                    <span className="text-[11px] text-blue-200 block">Du {formatDateFr(activeCard.created_at)}</span>
+                    <span className="font-bold text-white block">Au {formatDateFr(activeCard.expires_at)}</span>
                   </div>
                 </div>
 
                 {/* Actions de la carte active */}
-                <div className="mt-5 pt-4 border-t border-emerald-700/60 flex flex-wrap gap-2.5">
+                <div className="mt-5 pt-4 border-t border-blue-800/60 flex flex-wrap gap-2.5">
                   <button
                     onClick={() => {
                       setActiveModalCard(activeCard);
                       setRawModalToken(null);
                       setShowQrModal(true);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs backdrop-blur-sm transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs backdrop-blur-sm transition-colors border border-white/15"
                   >
                     <QrCode size={14} />
                     <span>Afficher / Télécharger le QR</span>
                   </button>
 
-                  <button
-                    onClick={() => handleRenewCard(activeCard)}
-                    disabled={actionLoading || member.status !== 'actif'}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-600 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
-                  >
-                    <RefreshCw size={14} />
-                    <span>Renouveler la carte (1 an)</span>
-                  </button>
+                  {isAdmin && (
+                    <>
+                      <button
+                        onClick={() => handleRenewCard(activeCard)}
+                        disabled={actionLoading || member.status !== 'actif'}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
+                      >
+                        <RefreshCw size={14} />
+                        <span>Renouveler la carte (1 an)</span>
+                      </button>
 
-                  <button
-                    onClick={() => handleRevokeCard(activeCard)}
-                    disabled={actionLoading}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-900/60 hover:bg-rose-800 text-rose-200 font-semibold text-xs transition-colors border border-rose-700/40"
-                  >
-                    <ShieldAlert size={14} />
-                    <span>Révoquer</span>
-                  </button>
+                      <button
+                        onClick={() => handleRevokeCard(activeCard)}
+                        disabled={actionLoading}
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-200 font-semibold text-xs transition-colors border border-rose-800/50"
+                      >
+                        <ShieldAlert size={14} />
+                        <span>Révoquer</span>
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
-              <div className="p-8 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
-                <p className="text-xs text-slate-500 mb-3">
+              <div className="p-8 text-center bg-stone-50 border border-dashed border-stone-300 rounded-2xl">
+                <p className="text-xs text-slate-600 mb-3">
                   Ce membre ne possède actuellement aucune carte active valide.
                 </p>
-                <button
-                  onClick={handleCreateNewCard}
-                  disabled={actionLoading || member.status !== 'actif'}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
-                >
-                  <PlusCircle size={15} />
-                  <span>Émettre une carte maintenant</span>
-                </button>
+                {isAdmin && (
+                  <button
+                    onClick={handleCreateNewCard}
+                    disabled={actionLoading || member.status !== 'actif'}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
+                  >
+                    <PlusCircle size={15} />
+                    <span>Émettre une carte maintenant</span>
+                  </button>
+                )}
               </div>
             )}
           </div>
 
           {/* Historique complet des cartes du membre */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+          <div className="bg-white rounded-2xl border border-stone-300/80 shadow-sm p-6">
             <h2 className="text-sm font-bold text-slate-900 mb-3">
               Historique des Cartes Émises
             </h2>
 
             {cards.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4">Aucune carte enregistrée.</p>
+              <p className="text-xs text-slate-500 py-4">Aucune carte enregistrée.</p>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-semibold uppercase text-[10px]">
+                    <tr className="bg-stone-100 border-b border-stone-200 text-stone-600 font-semibold uppercase text-[10px]">
                       <th className="py-2.5 px-3">Identifiant</th>
                       <th className="py-2.5 px-3">Statut</th>
                       <th className="py-2.5 px-3">Date d&apos;Émission</th>
@@ -595,10 +610,10 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
                       <th className="py-2.5 px-3">Révocation / Remplacement</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 text-slate-700">
+                  <tbody className="divide-y divide-stone-200 text-slate-800">
                     {cards.map((card) => (
-                      <tr key={card.id} className="hover:bg-slate-50/80">
-                        <td className="py-2.5 px-3 font-mono font-bold text-slate-900">
+                      <tr key={card.id} className="hover:bg-stone-50">
+                        <td className="py-2.5 px-3 font-mono font-bold text-blue-600">
                           {card.card_identifier}
                         </td>
                         <td className="py-2.5 px-3">
@@ -610,7 +625,7 @@ export function MemberDetailClient({ initialMember, initialCards }: Props) {
                         <td className="py-2.5 px-3 text-slate-500">
                           {formatDateFr(card.expires_at)}
                         </td>
-                        <td className="py-2.5 px-3 text-slate-400 text-[11px]">
+                        <td className="py-2.5 px-3 text-slate-500 text-[11px]">
                           {card.revoked_at ? `Révoquée le ${formatDateFr(card.revoked_at)}` : '-'}
                           {card.renewed_from_card_id && ' (Renouvellement)'}
                         </td>

@@ -38,17 +38,43 @@ export async function middleware(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
 
   const isAccessingAdmin = request.nextUrl.pathname.startsWith('/admin');
+  const isAccessingUsers = request.nextUrl.pathname.startsWith('/admin/users');
+  const isAccessingNewMember = request.nextUrl.pathname.startsWith('/admin/members/new');
   const isAccessingLogin = request.nextUrl.pathname === '/login';
 
+  // Redirection automatique de courtoisie /signin -> /login
+  if (request.nextUrl.pathname === '/signin') {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   // Protection des routes d'administration
-  if (isAccessingAdmin && !user) {
-    const redirectUrl = new URL('/login', request.url);
-    redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
-    return NextResponse.redirect(redirectUrl);
+  if (isAccessingAdmin) {
+    if (!user) {
+      const redirectUrl = new URL('/login', request.url);
+      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    const role = user.app_metadata?.role || user.user_metadata?.role || 'agent';
+
+    // Sécurité stricte RBAC :
+    // 1. Les comptes agents n'ont AUCUN accès à la gestion des utilisateurs (/admin/users)
+    if (role === 'agent' && isAccessingUsers) {
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+    }
+
+    // 2. Les comptes agents n'ont AUCUN accès au formulaire de création de membre (/admin/members/new)
+    if (role === 'agent' && isAccessingNewMember) {
+      return NextResponse.redirect(new URL('/admin/members', request.url));
+    }
   }
 
   // Redirection si déjà connecté et tente d'aller sur /login
   if (isAccessingLogin && user) {
+    const role = user.app_metadata?.role || user.user_metadata?.role || 'agent';
+    if (role === 'agent') {
+      return NextResponse.redirect(new URL('/verify', request.url));
+    }
     return NextResponse.redirect(new URL('/admin/dashboard', request.url));
   }
 
@@ -59,5 +85,6 @@ export const config = {
   matcher: [
     '/admin/:path*',
     '/login',
+    '/signin',
   ],
 };

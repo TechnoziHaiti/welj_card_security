@@ -18,7 +18,8 @@ async function verifyAdmin() {
     .eq('id', user.id)
     .single();
 
-  if (profile?.role !== 'admin' && user.user_metadata?.role !== 'admin') {
+  const role = profile?.role || user.app_metadata?.role || user.user_metadata?.role;
+  if (role !== 'admin') {
     return { authorized: false, error: 'Accès interdit. Rôle administrateur requis.' };
   }
 
@@ -49,7 +50,7 @@ export async function GET() {
         id: u.id,
         email: u.email,
         full_name: prof?.full_name || u.user_metadata?.full_name || 'Sans nom',
-        role: prof?.role || u.user_metadata?.role || 'agent',
+        role: prof?.role || u.app_metadata?.role || u.user_metadata?.role || 'agent',
         created_at: u.created_at,
         last_sign_in_at: u.last_sign_in_at,
       };
@@ -87,9 +88,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const assignedRole = role === 'admin' ? 'admin' : 'agent';
+    const assignedRole: 'admin' | 'agent' = role === 'admin' ? 'admin' : 'agent';
 
-    // Création du compte dans Supabase Auth
+    // Création du compte dans Supabase Auth avec user_metadata ET app_metadata
     const { data: authData, error: createErr } = await check.adminClient.auth.admin.createUser({
       email: email.trim(),
       password: password,
@@ -98,13 +99,16 @@ export async function POST(request: Request) {
         full_name: full_name.trim(),
         role: assignedRole,
       },
+      app_metadata: {
+        role: assignedRole,
+      },
     });
 
     if (createErr || !authData.user) {
       throw new Error(createErr?.message || 'Erreur lors de la création Auth');
     }
 
-    // Synchronisation du profil
+    // Synchronisation atomique dans la table public.profiles
     await check.adminClient
       .from('profiles')
       .upsert({
@@ -129,7 +133,52 @@ export async function POST(request: Request) {
   }
 }
 
-// 3. SUPPRIMER UN UTILISATEUR
+// 3. METTRE À JOUR LE RÔLE D'UN UTILISATEUR (PATCH)
+export async function PATCH(request: Request) {
+  const check = await verifyAdmin();
+  if (!check.authorized || !check.adminClient) {
+    return NextResponse.json({ error: check.error }, { status: 403 });
+  }
+
+  try {
+    const body = await request.json();
+    const { id, role } = body;
+
+    if (!id || !role || !['admin', 'agent'].includes(role)) {
+      return NextResponse.json(
+        { error: 'ID et rôle valide (admin ou agent) requis.' },
+        { status: 400 }
+      );
+    }
+
+    // Protection : L'admin connecté ne peut pas retirer ses propres droits admin
+    if (id === check.user.id && role !== 'admin') {
+      return NextResponse.json(
+        { error: 'Vous ne pouvez pas retirer vos propres droits administrateur.' },
+        { status: 400 }
+      );
+    }
+
+    // 1. Mise à jour de la table profiles
+    await check.adminClient
+      .from('profiles')
+      .update({ role })
+      .eq('id', id);
+
+    // 2. Mise à jour des métadonnées auth
+    await check.adminClient.auth.admin.updateUserById(id, {
+      user_metadata: { role },
+      app_metadata: { role },
+    });
+
+    return NextResponse.json({ success: true, id, role });
+  } catch (err: any) {
+    console.error('Erreur mise à jour rôle:', err);
+    return NextResponse.json({ error: err.message || 'Erreur mise à jour rôle' }, { status: 500 });
+  }
+}
+
+// 4. SUPPRIMER UN UTILISATEUR
 export async function DELETE(request: Request) {
   const check = await verifyAdmin();
   if (!check.authorized || !check.adminClient) {
@@ -152,10 +201,17 @@ export async function DELETE(request: Request) {
       );
     }
 
-    const { error: delErr } = await check.adminClient.auth.admin.deleteUser(userId);
-    if (delErr) throw delErr;
+    // 1. Suppression du profil
+    await check.adminClient
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
 
-    await check.adminClient.from('profiles').delete().eq('id', userId);
+    // 2. Suppression dans Supabase Auth
+    const { error: deleteErr } = await check.adminClient.auth.admin.deleteUser(userId);
+    if (deleteErr) {
+      throw deleteErr;
+    }
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

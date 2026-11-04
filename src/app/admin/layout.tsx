@@ -1,39 +1,29 @@
 import React from 'react';
 import { AdminSidebar } from '@/components/AdminSidebar';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUserRole } from '@/lib/auth-helpers';
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  let userEmail: string | null = null;
-  let userName: string | null = null;
-  let userRole: string | null = null;
+  const { user, role, profile } = await getCurrentUserRole();
 
-  try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      userEmail = user.email || null;
-      userName = user.user_metadata?.full_name || null;
-      userRole = user.user_metadata?.role || 'admin';
-    }
-  } catch (err) {
-    // Si Supabase n'est pas encore initialisé localement
-  }
+  const userEmail = user?.email || null;
+  const userName = profile?.full_name || user?.user_metadata?.full_name || null;
+  const userRole = role; // Strictement 'admin' ou 'agent'
 
   return (
-    <div className="min-h-screen bg-slate-100 flex">
-      {/* Sidebar verte corporate */}
+    <div className="h-screen w-full bg-slate-950 flex overflow-hidden">
+      {/* Sidebar noire / slate-950 */}
       <AdminSidebar
         userEmail={userEmail}
         userName={userName}
         userRole={userRole}
       />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+      {/* Zone de contenu principal en couleur #DED9D3 avec scroll vertical indépendant */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto bg-[#DED9D3] text-slate-900">
         <main className="flex-1 p-6 sm:p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>

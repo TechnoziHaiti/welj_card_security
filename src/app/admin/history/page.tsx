@@ -1,6 +1,7 @@
 import React from 'react';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentUserRole } from '@/lib/auth-helpers';
 import { HistoryClient } from './HistoryClient';
 import { VerificationLog } from '@/types/database';
 
@@ -30,5 +31,7 @@ export default async function HistoryPage() {
     console.error('Erreur chargement logs de vérification:', err);
   }
 
-  return <HistoryClient initialLogs={logs} />;
+  const { isAdmin } = await getCurrentUserRole();
+
+  return <HistoryClient initialLogs={logs} isAdmin={isAdmin} />;
 }

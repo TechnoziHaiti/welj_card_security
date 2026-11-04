@@ -1,19 +1,27 @@
 import React from 'react';
-import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentUserRole } from '@/lib/auth-helpers';
 import { UsersClient } from './UsersClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function UsersPage() {
+  const { user, isAdmin } = await getCurrentUserRole();
+
+  // Protection stricte : Seul l'administrateur peut voir et gérer les utilisateurs
+  if (!user) {
+    redirect('/login?redirectTo=/admin/users');
+  }
+
+  if (!isAdmin) {
+    redirect('/admin/dashboard');
+  }
+
   let userList: any[] = [];
-  let currentUserId = '';
+  const currentUserId = user.id;
 
   try {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-    currentUserId = user?.id || '';
-
     const adminClient = createAdminClient();
     const [
       { data: { users }, error: authErr },
@@ -30,7 +38,7 @@ export default async function UsersPage() {
           id: u.id,
           email: u.email,
           full_name: prof?.full_name || u.user_metadata?.full_name || 'Utilisateur Welj',
-          role: prof?.role || u.user_metadata?.role || 'agent',
+          role: prof?.role || u.app_metadata?.role || u.user_metadata?.role || 'agent',
           created_at: u.created_at,
           last_sign_in_at: u.last_sign_in_at,
         };

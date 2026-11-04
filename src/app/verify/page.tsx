@@ -1,29 +1,44 @@
+// Scanner officiel de vérification des cartes Welj
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import Image from 'next/image';
 import {
-  ShieldCheck,
-  QrCode,
   Camera,
-  Search,
+  Keyboard,
   ArrowRight,
   AlertCircle,
   ArrowLeft,
-  CheckCircle,
+  Loader2,
+  ScanLine,
 } from 'lucide-react';
 
 export default function PublicVerifyPage() {
   const router = useRouter();
   const [tokenInput, setTokenInput] = useState('');
   const [error, setError] = useState('');
-  const [isScanning, setIsScanning] = useState(false);
-  const [scannerSupported, setScannerSupported] = useState(true);
-  const scannerRef = useRef<unknown>(null);
+  // La caméra est activée automatiquement dès l'ouverture de la page
+  const [isScanning, setIsScanning] = useState(true);
+  const [cameraLoading, setCameraLoading] = useState(true);
+  const [manualMode, setManualMode] = useState(false);
+  const scannerRef = useRef<any>(null);
 
-  // Parse token if full URL pasted
+  // Arrêt sécurisé du scanner sans déclencher d'exception html5-qrcode
+  const safeStopScanner = async (scanner: any) => {
+    if (!scanner) return;
+    try {
+      const state = typeof scanner.getState === 'function' ? scanner.getState() : null;
+      // 2 = SCANNING, 3 = PAUSED dans html5-qrcode
+      if (state === 2 || state === 3 || scanner.isScanning) {
+        await scanner.stop();
+      }
+    } catch {
+      // Ignorer sans planter si le scanner était déjà arrêté
+    }
+  };
+
+  // Parse token if full URL pasted or read by camera
   const extractToken = (raw: string): string => {
     const trimmed = raw.trim();
     if (trimmed.includes('/verify/')) {
@@ -44,199 +59,211 @@ export default function PublicVerifyPage() {
     router.push(`/verify/${encodeURIComponent(token)}`);
   };
 
-  // Gestion du scanner de caméra
+  // Démarrage automatique de la caméra au chargement
   useEffect(() => {
-    if (!isScanning) return;
+    if (!isScanning || manualMode) return;
 
     let html5QrCodeScanner: any = null;
+    let isMounted = true;
+    setCameraLoading(true);
 
     const startScanner = async () => {
       try {
         const { Html5Qrcode } = await import('html5-qrcode');
+        if (!isMounted) return;
+
         html5QrCodeScanner = new Html5Qrcode('qr-reader');
         scannerRef.current = html5QrCodeScanner;
 
         await html5QrCodeScanner.start(
           { facingMode: 'environment' },
           {
-            fps: 10,
-            qrbox: { width: 250, height: 250 },
+            fps: 15,
+            qrbox: { width: 260, height: 260 },
+            aspectRatio: 1.0,
           },
-          (decodedText: string) => {
-            // Lecture réussie
-            const token = extractToken(decodedText);
-            if (html5QrCodeScanner) {
-              html5QrCodeScanner.stop().catch(() => {});
+          async (decodedText: string) => {
+            // Scan réussi : petite vibration tactile si supportée
+            if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+              try {
+                navigator.vibrate(100);
+              } catch {}
             }
+
+            const token = extractToken(decodedText);
+            const scanner = scannerRef.current;
+            scannerRef.current = null;
+            await safeStopScanner(scanner);
             router.push(`/verify/${encodeURIComponent(token)}`);
           },
           () => {
-            // Callback d'erreur sur chaque frame vide (ignoré)
+            // frame vide
           }
         );
+
+        if (!isMounted) {
+          await safeStopScanner(html5QrCodeScanner);
+          return;
+        }
+
+        setCameraLoading(false);
       } catch (err) {
         console.error('Erreur caméra:', err);
-        setScannerSupported(false);
-        setIsScanning(false);
-        setError('Impossible d\'accéder à la caméra. Vérifiez les permissions de votre navigateur.');
+        if (isMounted) {
+          setCameraLoading(false);
+          setIsScanning(false);
+          setManualMode(true);
+          setError('Caméra non disponible ou permission refusée. Utilisez la saisie manuelle ci-dessous.');
+        }
       }
     };
 
     startScanner();
 
     return () => {
-      if (scannerRef.current) {
-        (scannerRef.current as any).stop().catch(() => {});
-      }
+      isMounted = false;
+      const scanner = scannerRef.current;
+      scannerRef.current = null;
+      safeStopScanner(scanner);
     };
-  }, [isScanning, router]);
+  }, [isScanning, manualMode, router]);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-emerald-950 via-emerald-900 to-slate-900 flex flex-col items-center justify-center p-4 sm:p-6 text-white">
-      <div className="w-full max-w-md">
-        {/* Brand Banner */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center bg-white rounded-2xl p-3 shadow-lg mb-3 ring-4 ring-emerald-500/20">
-            <Image
-              src="/logo.png"
-              alt="Welj Express Services"
-              width={160}
-              height={70}
-              className="h-12 w-auto object-contain"
-              priority
-            />
-          </div>
-          <h1 className="text-2xl font-black tracking-tight text-white">
-            WELJ EXPRESS SERVICES
+    <main className="min-h-screen bg-[#010101] relative overflow-hidden flex flex-col items-center justify-center p-3 sm:p-6 text-white selection:bg-blue-600 selection:text-white">
+      {/* Halo lumineux ambiant bleu nuit / noir */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[380px] bg-gradient-to-b from-blue-600/20 via-blue-900/10 to-transparent blur-3xl pointer-events-none" />
+      <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[750px] h-[350px] bg-gradient-to-t from-blue-950/25 to-transparent blur-3xl pointer-events-none" />
+
+      <div className="relative z-10 w-full max-w-md">
+        {/* En-tête épuré */}
+        <div className="text-center mb-5 sm:mb-7">
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
+            Scanner Officiel de Cartes
           </h1>
-          <p className="text-xs text-emerald-300 font-medium tracking-wide uppercase mt-1">
-            Vérificateur officiel d&apos;authenticité de cartes
-          </p>
         </div>
 
-        {/* Card Conteneur */}
-        <div className="bg-white text-slate-800 rounded-3xl shadow-2xl p-6 border border-slate-100">
-          <div className="text-center mb-5">
-            <h2 className="text-lg font-bold text-slate-900">
-              Contrôle de conformité
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Scannez le QR Code officiel présent sur la carte ou saisissez manuellement son identifiant.
-            </p>
-          </div>
+        {/* Conteneur Scanner Principal en verre sombre bleu nuit */}
+        <div className="bg-[#0b1329]/90 backdrop-blur-xl text-white rounded-3xl shadow-2xl p-5 sm:p-6 border border-slate-800/80">
+          {!manualMode ? (
+            <div>
+              <div className="text-center mb-4">
+                <p className="text-xs text-slate-400">
+                  Placez le QR Code de la carte Badgy devant votre appareil photo.
+                </p>
+              </div>
 
-          {/* Option 1: Scanner Caméra */}
-          <div className="mb-5">
-            {!isScanning ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setError('');
-                  setIsScanning(true);
-                }}
-                className="w-full flex items-center justify-center gap-3 p-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-sm transition-all shadow-md group"
-              >
-                <div className="p-2 bg-emerald-600 rounded-xl group-hover:scale-105 transition-transform">
-                  <Camera size={20} className="text-white" />
-                </div>
-                <div className="text-left">
-                  <span className="block font-bold">Scanner avec l&apos;appareil photo</span>
-                  <span className="block text-[11px] text-emerald-200 font-normal">
-                    Lecture instantanée du QR Code physique
-                  </span>
-                </div>
-              </button>
-            ) : (
-              <div className="rounded-2xl overflow-hidden border-2 border-emerald-600 bg-slate-900 p-3 text-center">
-                <div id="qr-reader" className="w-full rounded-xl overflow-hidden" />
+              {/* Viseur Caméra Automatique Haute Précision */}
+              <div className="relative rounded-2xl overflow-hidden border border-slate-800 bg-black aspect-square flex items-center justify-center">
+                {cameraLoading && (
+                  <div className="absolute inset-0 z-20 bg-slate-950/95 flex flex-col items-center justify-center gap-3 text-white">
+                    <Loader2 size={34} className="animate-spin text-blue-400" />
+                    <span className="text-xs font-semibold text-blue-200">
+                      Activation automatique de la caméra...
+                    </span>
+                  </div>
+                )}
+
+                <div id="qr-reader" className="w-full h-full object-cover" />
+
+                {/* Laser de scan animé stylisé */}
+                {!cameraLoading && (
+                  <div className="absolute inset-x-8 top-1/2 h-0.5 bg-blue-400 shadow-[0_0_14px_#38bdf8] z-10 pointer-events-none animate-pulse" />
+                )}
+              </div>
+
+              {/* Bouton bascule vers saisie manuelle si besoin */}
+              <div className="mt-4 text-center">
                 <button
                   type="button"
-                  onClick={() => {
-                    if (scannerRef.current) {
-                      (scannerRef.current as any).stop().catch(() => {});
-                    }
-                    setIsScanning(false);
+                  onClick={async () => {
+                    const scanner = scannerRef.current;
+                    scannerRef.current = null;
+                    await safeStopScanner(scanner);
+                    setManualMode(true);
                   }}
-                  className="mt-3 px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold"
+                  className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-blue-300 font-semibold transition-colors"
                 >
-                  Fermer la caméra
-                </button>
-              </div>
-            )}
-          </div>
-
-          <div className="relative flex py-2 items-center">
-            <div className="flex-grow border-t border-slate-200"></div>
-            <span className="flex-shrink mx-4 text-slate-400 text-xs uppercase tracking-wider font-semibold">
-              Ou saisie directe
-            </span>
-            <div className="flex-grow border-t border-slate-200"></div>
-          </div>
-
-          {/* Option 2: Entrée manuelle */}
-          <form onSubmit={handleManualSubmit} className="mt-3 space-y-3">
-            <div>
-              <label htmlFor="tokenInput" className="block text-xs font-medium text-slate-700 mb-1">
-                Token ou lien de vérification
-              </label>
-              <div className="relative">
-                <input
-                  id="tokenInput"
-                  type="text"
-                  placeholder="Collez le token ou l'URL complète..."
-                  value={tokenInput}
-                  onChange={(e) => setTokenInput(e.target.value)}
-                  className="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:border-transparent text-sm placeholder:text-slate-400"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-1.5 top-1.5 p-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white transition-colors"
-                  aria-label="Vérifier"
-                >
-                  <ArrowRight size={16} />
+                  <Keyboard size={14} />
+                  <span>Saisir le code manuellement au clavier</span>
                 </button>
               </div>
             </div>
-
-            {error && (
-              <div className="flex items-start gap-2 p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-700 text-xs">
-                <AlertCircle size={15} className="shrink-0 mt-0.5" />
-                <span>{error}</span>
+          ) : (
+            /* Mode Saisie Manuelle de secours */
+            <div>
+              <div className="text-center mb-4">
+                <h2 className="text-base font-bold text-white">
+                  Saisie manuelle du token
+                </h2>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Entrez le code ou le lien de la carte.
+                </p>
               </div>
-            )}
-          </form>
 
-          {/* Consignes de sécurité officielles */}
-          <div className="mt-5 p-3.5 bg-emerald-50/70 border border-emerald-200 rounded-2xl">
-            <h3 className="text-xs font-bold text-emerald-950 flex items-center gap-1.5 mb-1.5">
-              <ShieldCheck size={15} className="text-emerald-700 shrink-0" />
-              Consignes Officielles de Sécurité Welj
-            </h3>
-            <ul className="text-[11px] text-emerald-900 space-y-1 list-disc list-inside leading-relaxed">
-              <li>
-                <strong>Scanner officiel étanche :</strong> Ce scanner interroge directement le registre Supabase et neutralise toute tentative de faux site ou clone externe.
-              </li>
-              <li>
-                <strong>Vérification physique :</strong> Contrôlez que le Nom et la Date d&apos;expiration sur cet écran correspondent à la carte Badgy.
-              </li>
-              <li>
-                <strong>Code dynamique 30 min :</strong> Le code et l&apos;horloge en direct certifient la fraîcheur du contrôle à la seconde près.
-              </li>
-            </ul>
-          </div>
+              <form onSubmit={handleManualSubmit} className="space-y-3">
+                <div>
+                  <label htmlFor="tokenInput" className="block text-xs font-semibold text-slate-300 uppercase mb-1">
+                    Token ou Lien complet
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="tokenInput"
+                      type="text"
+                      autoFocus
+                      placeholder="Collez le token ou l'URL..."
+                      value={tokenInput}
+                      onChange={(e) => setTokenInput(e.target.value)}
+                      className="w-full pl-3.5 pr-10 py-2.5 rounded-xl bg-slate-950/80 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm placeholder:text-slate-500"
+                    />
+                    <button
+                      type="submit"
+                      className="absolute right-1.5 top-1.5 p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white transition-colors"
+                      aria-label="Vérifier"
+                    >
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="pt-2 text-center">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setManualMode(false);
+                      setIsScanning(true);
+                      setError('');
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-500 transition-colors shadow-lg shadow-blue-950/50"
+                  >
+                    <Camera size={14} />
+                    <span>Réactiver la caméra automatique</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          )}
+
+          {error && (
+            <div className="mt-3.5 p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+              <AlertCircle size={15} className="shrink-0 text-rose-400" />
+              <span>{error}</span>
+            </div>
+          )}
+
+
         </div>
 
-        {/* Lien de retour et mention légale */}
-        <div className="mt-6 flex flex-col items-center gap-2">
+        {/* Accès Administration */}
+        <div className="mt-5 flex flex-col items-center gap-2">
           <Link
             href="/login"
-            className="inline-flex items-center gap-1.5 text-xs text-emerald-200 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
           >
             <ArrowLeft size={13} />
             <span>Accès Espace Administrateur</span>
           </Link>
-          <p className="text-[10px] text-emerald-400 font-mono mt-1">
-            Welj Express Services &bull; Module de sécurité v1.0
+          <p className="text-[10px] text-slate-500 font-mono">
+            Welj Express Services &bull; Module de Sécurité v1.0
           </p>
         </div>
       </div>

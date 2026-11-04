@@ -1,6 +1,5 @@
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { headers } from 'next/headers';
 import {
   ShieldCheck,
@@ -13,6 +12,7 @@ import {
   User,
   Hash,
   Award,
+  Camera,
 } from 'lucide-react';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createAnonClient } from '@/lib/supabase/server';
@@ -75,28 +75,17 @@ export default async function VerifyTokenPage({ params }: PageProps) {
   const dynamicSecurity = generateDynamicSecurityCode(tokenHash, 30);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 flex flex-col items-center justify-center p-4 sm:p-6">
+    <main className="min-h-screen bg-gradient-to-b from-[#010101] via-[#020617] to-[#0a152f] flex flex-col items-center justify-center p-4 sm:p-6 text-white">
       <div className="w-full max-w-md">
         {/* En-tête Welj Express Services */}
         <div className="text-center mb-6">
-          <div className="inline-flex items-center justify-center bg-white rounded-2xl p-3 shadow-md mb-3 ring-4 ring-emerald-900/10 border border-slate-200">
-            <Image
-              src="/logo.png"
-              alt="Welj Express Services"
-              width={160}
-              height={70}
-              className="h-11 w-auto object-contain"
-              priority
-            />
-          </div>
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-900/10 text-emerald-900 text-xs font-semibold tracking-wider uppercase mb-2">
-            <ShieldCheck size={14} className="text-emerald-700" />
-            Vérificateur Officiel
-          </div>
-          <h1 className="text-xl font-black text-slate-800 tracking-tight">
+          <span className="inline-block px-3 py-1 rounded-full bg-blue-950/80 border border-blue-800/60 text-blue-400 text-[11px] font-black tracking-widest uppercase mb-2 shadow-sm">
+            WELJ EXPRESS SERVICES
+          </span>
+          <h1 className="text-2xl font-black text-white tracking-tight">
             Vérification de Carte
           </h1>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-xs text-slate-400 mt-1">
             Résultat certifié par le registre officiel de Welj Express Services
           </p>
         </div>
@@ -117,7 +106,7 @@ export default async function VerifyTokenPage({ params }: PageProps) {
         {/* CAS 2 : CARTE EXPIRÉE                                       */}
         {/* ============================================================ */}
         {result === 'expiree' && (
-          <div className="bg-white rounded-2xl shadow-xl border-2 border-amber-500 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[#0b1329] text-white rounded-2xl shadow-2xl border-2 border-amber-500/80 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-amber-600 p-6 text-white text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm ring-4 ring-white/30">
                 <Clock size={36} className="text-white" />
@@ -132,28 +121,28 @@ export default async function VerifyTokenPage({ params }: PageProps) {
             </div>
 
             <div className="p-6 space-y-4">
-              <div className="bg-amber-50/50 rounded-xl p-4 border border-amber-200/80">
-                <span className="text-[11px] font-semibold text-amber-700 uppercase tracking-wider">
+              <div className="bg-slate-950/80 rounded-xl p-4 border border-slate-800">
+                <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
                   Membre associé
                 </span>
-                <h3 className="text-lg font-bold text-slate-800 mt-1">
+                <h3 className="text-lg font-bold text-white mt-1">
                   {verification.first_name} {verification.last_name}
                 </h3>
-                <p className="text-xs font-mono text-slate-500 mt-0.5">
-                  Code membre : <span className="font-semibold text-slate-700">{verification.member_code}</span>
+                <p className="text-xs font-mono text-slate-400 mt-0.5">
+                  Code de la carte : <span className="font-semibold text-blue-400">{verification.member_code}</span>
                 </p>
               </div>
 
-              <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-center">
-                <p className="text-xs text-rose-700 font-medium">
+              <div className="p-3.5 bg-rose-950/40 border border-rose-500/40 rounded-xl text-center">
+                <p className="text-xs text-rose-300 font-medium">
                   Date d&apos;expiration échue le :
                 </p>
-                <p className="text-sm font-bold text-rose-900 mt-0.5">
+                <p className="text-sm font-bold text-rose-200 mt-0.5">
                   {formatDateFr(verification.expires_at)}
                 </p>
               </div>
 
-              <p className="text-xs text-slate-500 text-center">
+              <p className="text-xs text-slate-400 text-center">
                 Le titulaire doit contacter Welj Express Services pour effectuer le renouvellement de sa carte.
               </p>
             </div>
@@ -164,7 +153,7 @@ export default async function VerifyTokenPage({ params }: PageProps) {
         {/* CAS 3 : CARTE RÉVOQUÉE                                      */}
         {/* ============================================================ */}
         {result === 'revoquee' && (
-          <div className="bg-white rounded-2xl shadow-xl border-2 border-rose-600 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[#0b1329] text-white rounded-2xl shadow-2xl border-2 border-rose-600/80 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-rose-600 p-6 text-white text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm ring-4 ring-white/30">
                 <ShieldAlert size={36} className="text-white" />
@@ -179,10 +168,10 @@ export default async function VerifyTokenPage({ params }: PageProps) {
             </div>
 
             <div className="p-6 text-center space-y-4">
-              <div className="p-4 bg-rose-50 border border-rose-200 rounded-xl text-rose-900 text-sm font-semibold">
+              <div className="p-4 bg-rose-950/40 border border-rose-500/40 rounded-xl text-rose-200 text-sm font-semibold">
                 Cette carte a été invalidée ou remplacée. Elle ne confère plus aucun droit d&apos;accès.
               </div>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-400">
                 Toute tentative d&apos;utilisation d&apos;une carte révoquée est consignée dans le registre de sécurité.
               </p>
             </div>
@@ -193,7 +182,7 @@ export default async function VerifyTokenPage({ params }: PageProps) {
         {/* CAS 4 : CARTE NON RECONNUE / TOKEN INVALIDE                 */}
         {/* ============================================================ */}
         {result === 'inconnue' && (
-          <div className="bg-white rounded-2xl shadow-xl border-2 border-red-500 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-[#0b1329] text-white rounded-2xl shadow-2xl border-2 border-red-500/80 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="bg-red-700 p-6 text-white text-center">
               <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm ring-4 ring-white/30">
                 <XCircle size={36} className="text-white" />
@@ -208,9 +197,9 @@ export default async function VerifyTokenPage({ params }: PageProps) {
             </div>
 
             <div className="p-6 text-center space-y-4">
-              <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-900 text-xs text-left">
-                <p className="font-semibold mb-1">Motifs possibles :</p>
-                <ul className="list-disc list-inside space-y-1 text-red-800">
+              <div className="p-4 bg-red-950/40 border border-red-500/40 rounded-xl text-red-200 text-xs text-left">
+                <p className="font-semibold mb-1 text-red-100">Motifs possibles :</p>
+                <ul className="list-disc list-inside space-y-1 text-red-200">
                   <li>Tentative de contrefaçon ou falsification de QR Code.</li>
                   <li>Lien ou token incomplet ou altéré lors du scan.</li>
                   <li>Carte provenant d&apos;un émetteur tiers non agréé.</li>
@@ -227,22 +216,22 @@ export default async function VerifyTokenPage({ params }: PageProps) {
         <div className="mt-6 flex flex-col items-center gap-3">
           <Link
             href="/verify"
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs border border-slate-300 shadow-sm transition-all"
+            className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-950/50 transition-all hover:scale-[1.01]"
           >
-            <QrCode size={16} className="text-emerald-700" />
-            <span>Effectuer un autre scan</span>
+            <Camera size={18} />
+            <span>Scanner la carte suivante</span>
           </Link>
 
           <Link
             href="/login"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
           >
             <ArrowLeft size={13} />
             <span>Accès Administrateur Welj</span>
           </Link>
         </div>
 
-        <p className="text-center text-[10px] text-slate-400 mt-6 font-mono">
+        <p className="text-center text-[10px] text-slate-500 mt-6 font-mono">
           Welj Express Services &copy; {new Date().getFullYear()} &bull; Sécurité &amp; Traçabilité
         </p>
       </div>

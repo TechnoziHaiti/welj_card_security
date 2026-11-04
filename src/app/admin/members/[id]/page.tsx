@@ -2,6 +2,7 @@ import React from 'react';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { getCurrentUserRole } from '@/lib/auth-helpers';
 import { MemberDetailClient } from './MemberDetailClient';
 import { Member, Card } from '@/types/database';
 
@@ -44,5 +45,7 @@ export default async function MemberDetailPage({ params }: PageProps) {
     return notFound();
   }
 
-  return <MemberDetailClient initialMember={member} initialCards={cards} />;
+  const { isAdmin } = await getCurrentUserRole();
+
+  return <MemberDetailClient initialMember={member} initialCards={cards} isAdmin={isAdmin} />;
 }

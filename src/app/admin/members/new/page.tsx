@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -13,6 +13,8 @@ import {
   Calendar,
   Hash,
   Sparkles,
+  User,
+  KeyRound,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { QrCodeModal } from '@/components/QrCodeModal';
@@ -27,8 +29,9 @@ export default function NewMemberPage() {
   // 1. Informations d'identité
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
+  const [clientCode, setClientCode] = useState('');
   const [memberCode, setMemberCode] = useState('');
-  const [accountType, setAccountType] = useState<AccountType>('Standard');
+  const [accountType, setAccountType] = useState<AccountType>('Platinum');
 
   // 2. Dates de la carte (Création & Expiration)
   const todayStr = new Date().toISOString().split('T')[0];
@@ -49,71 +52,126 @@ export default function NewMemberPage() {
   const [rawQrToken, setRawQrToken] = useState<string | null>(null);
   const [showQrModal, setShowQrModal] = useState(false);
 
-  // Mise à jour automatique de la date d'expiration (+1 an) si la date de création change
+  // Vérification de sécurité : Seul l'administrateur a le droit de créer des membres
+  useEffect(() => {
+    async function verifyAdminAccess() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.replace('/login');
+        return;
+      }
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
+      const role = profile?.role || user.app_metadata?.role || user.user_metadata?.role;
+      if (role !== 'admin') {
+        router.replace('/admin/members');
+      }
+    }
+    verifyAdminAccess();
+  }, [router, supabase]);
+
+  // Calcul automatique du Code Membre selon la règle officielle (Année + Séquence continue)
+  useEffect(() => {
+    const fetchNextMemberCode = async () => {
+      try {
+        const currentYear = new Date().getFullYear();
+        const { data } = await supabase
+          .from('members')
+          .select('member_code')
+          .order('created_at', { ascending: false })
+          .limit(20);
+
+        if (data && data.length > 0) {
+          const yearCodes = data
+            .map((m) => m.member_code)
+            .filter((c) => c && c.startsWith(String(currentYear)));
+
+          if (yearCodes.length > 0) {
+            const maxSeq = Math.max(
+              ...yearCodes.map((c) => {
+                const seqPart = c.slice(4);
+                const num = parseInt(seqPart, 10);
+                return isNaN(num) ? 0 : num;
+              })
+            );
+            const nextSeq = maxSeq + 1;
+            const seqStr = nextSeq < 10000 ? String(nextSeq).padStart(4, '0') : String(nextSeq);
+            setMemberCode(`${currentYear}${seqStr}`);
+            return;
+          }
+        }
+        setMemberCode(`${currentYear}0001`);
+      } catch (err) {
+        console.error('Erreur calcul code membre:', err);
+        setMemberCode(`${new Date().getFullYear()}0001`);
+      }
+    };
+
+    fetchNextMemberCode();
+  }, [supabase]);
+
+  // Mise à jour synchronisée de la date d'expiration par défaut (+1 an) si création modifiée
   const handleCreationDateChange = (newCreationDate: string) => {
     setCreationDate(newCreationDate);
-    try {
-      const d = new Date(newCreationDate);
-      if (!isNaN(d.getTime())) {
-        const calculated = calculateExpirationDate(d);
-        setExpirationDate(calculated.toISOString().split('T')[0]);
+    if (newCreationDate) {
+      try {
+        const parts = newCreationDate.split('-');
+        const y = parseInt(parts[0], 10) + 1;
+        setExpirationDate(`${y}-${parts[1]}-${parts[2]}`);
+      } catch {
+        // Fallback
       }
-    } catch {
-      // Ignoré
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!firstName.trim() || !lastName.trim()) {
-      setError('Veuillez renseigner le nom et le prénom du membre.');
-      return;
-    }
-
-    setLoading(true);
     setError(null);
+    setLoading(true);
 
     try {
+      if (!lastName.trim() || !firstName.trim()) {
+        throw new Error('Le nom et le prénom sont obligatoires.');
+      }
+
+      if (!clientCode.trim()) {
+        throw new Error('Le Code Client est obligatoire.');
+      }
+
+      // 1. Enregistrement du membre
       let newMember: Member;
+      const codeToUse = memberCode.trim();
 
-      // Si l'utilisateur a spécifié un code client personnalisé
-      if (memberCode.trim()) {
-        const { data: customMember, error: customErr } = await supabase
-          .from('members')
-          .insert({
-            member_code: memberCode.trim().toUpperCase(),
-            first_name: firstName.trim(),
-            last_name: lastName.trim(),
-            account_type: accountType,
-            status: 'actif',
-          })
-          .select()
-          .single();
+      const { data: memberData, error: memberError } = await supabase
+        .from('members')
+        .insert({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          account_type: accountType,
+          member_code: codeToUse,
+          status: 'actif',
+        })
+        .select()
+        .single();
 
-        if (customErr || !customMember) {
-          throw new Error(
-            customErr?.message?.includes('duplicate key')
-              ? `Le code client "${memberCode}" est déjà attribué. Veuillez en choisir un autre.`
-              : customErr?.message || 'Erreur lors de la création du membre.'
+      if (memberError || !memberData) {
+        if (memberError?.message?.includes('duplicate key')) {
+          const { data: atomicData, error: atomicErr } = await supabase.rpc(
+            'create_member_atomic',
+            {
+              p_first_name: firstName.trim(),
+              p_last_name: lastName.trim(),
+              p_account_type: accountType,
+            }
           );
-        }
-        newMember = customMember as Member;
-      } else {
-        // Génération automatique et atomique du code séquentiel par PostgreSQL
-        const { data: memberData, error: memberError } = await supabase.rpc(
-          'create_member_atomic',
-          {
-            p_first_name: firstName.trim(),
-            p_last_name: lastName.trim(),
-            p_account_type: accountType,
+          if (atomicErr || !atomicData) {
+            throw new Error(atomicErr?.message || 'Erreur lors de la création du membre.');
           }
-        );
-
-        if (memberError || !memberData) {
+          newMember = atomicData as unknown as Member;
+        } else {
           throw new Error(memberError?.message || 'Erreur lors de la création du membre.');
         }
-
-        newMember = memberData as unknown as Member;
+      } else {
+        newMember = memberData as Member;
       }
 
       setCreatedMember(newMember);
@@ -124,9 +182,7 @@ export default function NewMemberPage() {
         const tokenHash = hashToken(rawToken);
         const cardIdentifier = generateCardIdentifier();
 
-        // Heure de création avec l'heure courante sur la date sélectionnée
         const creationObj = new Date(`${creationDate}T${new Date().toTimeString().split(' ')[0]}`);
-        // Expiration à 23:59:59.999 UTC sur la date d'expiration choisie
         const expirationObj = new Date(`${expirationDate}T23:59:59.999Z`);
 
         const { data: cardData, error: cardError } = await supabase
@@ -162,128 +218,178 @@ export default function NewMemberPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
+    <div className="w-full max-w-5xl mx-auto space-y-6">
+      {/* En-tête */}
       <div className="flex items-center gap-3">
         <Link
           href="/admin/members"
-          className="p-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-600 transition-colors shadow-sm"
+          className="p-2.5 rounded-xl bg-white hover:bg-stone-100 border border-stone-300 text-slate-700 transition-colors shadow-sm"
         >
-          <ArrowLeft size={16} />
+          <ArrowLeft size={18} />
         </Link>
         <div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
             Nouveau Membre Welj
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Enregistrement du membre, attribution du code et émission de la carte.
+          <p className="text-xs text-slate-600 mt-0.5">
+            Enregistrement du dossier client, attribution automatique du code membre et émission de carte.
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Identité : Nom & Prénom */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {/* Formulaire large et spacieux */}
+      <div className="bg-white rounded-2xl border border-stone-300/80 shadow-sm p-6 sm:p-10 text-slate-900">
+        <form onSubmit={handleSubmit} className="space-y-7">
+          {/* Section 1 : Identité Civile */}
+          <div className="space-y-4">
+            <h2 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
+              <User size={15} />
+              <span>1. Identité du Titulaire</span>
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <div>
+                <label
+                  htmlFor="lastName"
+                  className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2"
+                >
+                  Nom de famille *
+                </label>
+                <input
+                  id="lastName"
+                  type="text"
+                  required
+                  placeholder="Ex: Dupont"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="firstName"
+                  className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2"
+                >
+                  Prénom *
+                </label>
+                <input
+                  id="firstName"
+                  type="text"
+                  required
+                  placeholder="Ex: Jean-Marc"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Section 2 : Codes (Code Client obligatoire & Code de la Carte automatique) */}
+          <div className="space-y-4 pt-3 border-t border-stone-200">
+            <h2 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
+              <KeyRound size={15} />
+              <span>2. Code Client &amp; Code de la Carte</span>
+            </h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+              {/* CHAMP 1 : CODE CLIENT (OBLIGATOIRE, SAISIE MANUELLE) */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label
+                    htmlFor="clientCode"
+                    className="block text-xs font-semibold text-slate-700 uppercase tracking-wider"
+                  >
+                    Code Client *
+                  </label>
+                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                    Saisie Obligatoire
+                  </span>
+                </div>
+                <div className="relative">
+                  <User size={16} className="absolute left-3.5 top-3.5 text-stone-400" />
+                  <input
+                    id="clientCode"
+                    type="text"
+                    required
+                    placeholder="Ex: CL-9824 ou REF-0042"
+                    value={clientCode}
+                    onChange={(e) => setClientCode(e.target.value)}
+                    className="w-full pl-10 pr-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-mono transition-all"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  Référence interne ou numéro de dossier client à renseigner obligatoirement.
+                </p>
+              </div>
+
+              {/* CHAMP 2 : CODE DE LA CARTE (AUTOMATIQUEMENT REMPLI SELON LA LOGIQUE) */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label
+                    htmlFor="memberCode"
+                    className="block text-xs font-semibold text-slate-700 uppercase tracking-wider"
+                  >
+                    Code de la Carte
+                  </label>
+                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1 uppercase tracking-wider">
+                    <Sparkles size={12} />
+                    Rempli Automatiquement
+                  </span>
+                </div>
+                <div className="relative">
+                  <Hash size={16} className="absolute left-3.5 top-3.5 text-blue-600" />
+                  <input
+                    id="memberCode"
+                    type="text"
+                    readOnly
+                    value={memberCode || `${new Date().getFullYear()}0001`}
+                    className="w-full pl-10 pr-4 py-3 text-sm bg-blue-50/50 border border-blue-200 rounded-xl text-blue-800 font-mono font-bold cursor-not-allowed select-none"
+                  />
+                </div>
+                <p className="text-[11px] text-slate-500 mt-1.5">
+                  Calculé automatiquement selon la logique : Année ({new Date().getFullYear()}) + numéro de séquence incrémenté.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3 : Formule et Type de Compte */}
+          <div className="space-y-4 pt-3 border-t border-stone-200">
             <div>
               <label
-                htmlFor="lastName"
-                className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5"
+                htmlFor="accountType"
+                className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2"
               >
-                Nom de famille *
+                Type de Compte Membre
               </label>
-              <input
-                id="lastName"
-                type="text"
-                required
-                placeholder="Ex: Dupont"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none transition-all"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="firstName"
-                className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5"
+              <select
+                id="accountType"
+                value={accountType}
+                onChange={(e) => setAccountType(e.target.value as AccountType)}
+                className="w-full px-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               >
-                Prénom *
-              </label>
-              <input
-                id="firstName"
-                type="text"
-                required
-                placeholder="Ex: Jean-Marc"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none transition-all"
-              />
+                <option value="Platinum">Platinum</option>
+                <option value="Gold">Gold</option>
+                <option value="Silver">Silver</option>
+                <option value="Bronze">Bronze</option>
+              </select>
             </div>
           </div>
 
-          {/* Code Client / Membre */}
-          <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label
-                htmlFor="memberCode"
-                className="block text-xs font-semibold text-slate-700 uppercase tracking-wider"
-              >
-                Code Client / Code Membre
-              </label>
-              <span className="text-[11px] text-emerald-700 font-medium flex items-center gap-1">
-                <Sparkles size={12} />
-                Laisser vide pour génération automatique
-              </span>
-            </div>
-            <div className="relative">
-              <Hash size={16} className="absolute left-3.5 top-3 text-slate-400" />
-              <input
-                id="memberCode"
-                type="text"
-                placeholder="Ex: 20260001 (Automatique si vide)"
-                value={memberCode}
-                onChange={(e) => setMemberCode(e.target.value)}
-                className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none font-mono"
-              />
-            </div>
-            <p className="text-[10px] text-slate-400 mt-1">
-              Si vous laissez ce champ vide, le système attribuera automatiquement le prochain code selon la séquence officielle (ex : Année + Séquence continue).
-            </p>
-          </div>
-
-          {/* Type de compte */}
-          <div>
-            <label
-              htmlFor="accountType"
-              className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5"
-            >
-              Type de Compte Membre
-            </label>
-            <select
-              id="accountType"
-              value={accountType}
-              onChange={(e) => setAccountType(e.target.value as AccountType)}
-              className="w-full px-3.5 py-2.5 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 focus:border-transparent outline-none bg-white transition-all"
-            >
-              <option value="Standard">Compte Standard</option>
-              <option value="Premium">Compte Premium</option>
-              <option value="VIP">Compte VIP</option>
-              <option value="Entreprise">Compte Entreprise</option>
-            </select>
-          </div>
-
-          {/* Dates de Carte : Création et Expiration */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-              <Calendar size={16} className="text-emerald-700" />
-              <span>Paramètres de la Carte Welj</span>
+          {/* Section 4 : Paramètres de la Carte Welj */}
+          <div className="p-5 sm:p-6 rounded-2xl bg-stone-50 border border-stone-200 space-y-5">
+            <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider">
+              <Calendar size={16} className="text-blue-600" />
+              <span>Paramètres de la Carte Welj (Validité 1 an)</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               <div>
                 <label
                   htmlFor="creationDate"
-                  className="block text-[11px] font-semibold text-slate-600 uppercase mb-1"
+                  className="block text-[11px] font-semibold text-slate-600 uppercase mb-1.5"
                 >
                   Date de Création de la Carte
                 </label>
@@ -293,14 +399,14 @@ export default function NewMemberPage() {
                   required
                   value={creationDate}
                   onChange={(e) => handleCreationDateChange(e.target.value)}
-                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 outline-none bg-white"
+                  className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-900"
                 />
               </div>
 
               <div>
                 <label
                   htmlFor="expirationDate"
-                  className="block text-[11px] font-semibold text-slate-600 uppercase mb-1"
+                  className="block text-[11px] font-semibold text-slate-600 uppercase mb-1.5"
                 >
                   Date d&apos;Expiration de la Carte
                 </label>
@@ -310,20 +416,20 @@ export default function NewMemberPage() {
                   required
                   value={expirationDate}
                   onChange={(e) => setExpirationDate(e.target.value)}
-                  className="w-full px-3 py-2 text-xs sm:text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-emerald-600 outline-none bg-white font-bold text-emerald-900"
+                  className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-bold text-blue-700"
                 />
               </div>
             </div>
 
-            <label className="flex items-start gap-3 cursor-pointer pt-2 border-t border-slate-200">
+            <label className="flex items-start gap-3 cursor-pointer pt-3 border-t border-stone-200">
               <input
                 type="checkbox"
                 checked={createCardNow}
                 onChange={(e) => setCreateCardNow(e.target.checked)}
-                className="mt-0.5 w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+                className="mt-0.5 w-4 h-4 text-blue-600 rounded border-stone-300 focus:ring-blue-500 bg-white"
               />
               <div className="text-xs">
-                <span className="font-bold text-slate-800 block">
+                <span className="font-bold text-slate-900 block">
                   Émettre et générer le QR Code officiel immédiatement
                 </span>
                 <span className="text-slate-500 text-[11px] block mt-0.5">
@@ -334,24 +440,25 @@ export default function NewMemberPage() {
           </div>
 
           {/* Notice Confidentialité */}
-          <div className="p-3.5 rounded-xl bg-emerald-50/60 border border-emerald-200 text-emerald-900 text-[11px] flex items-start gap-2">
-            <ShieldCheck size={16} className="text-emerald-700 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-slate-700 text-xs flex items-start gap-2.5">
+            <ShieldCheck size={18} className="text-blue-600 shrink-0 mt-0.5" />
             <span>
               <strong>Sécurité &amp; Confidentialité :</strong> Aucune photo n&apos;est enregistrée. La carte est liée au QR Code et protégée par un code de sécurité dynamique en direct (30 min) lors des contrôles.
             </span>
           </div>
 
           {error && (
-            <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center gap-2">
+            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5">
               <AlertCircle size={16} className="shrink-0 text-rose-600" />
               <span>{error}</span>
             </div>
           )}
 
-          <div className="flex items-center justify-end gap-3 pt-2">
+          {/* Boutons d'action */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-200">
             <Link
               href="/admin/members"
-              className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors"
+              className="px-5 py-2.5 rounded-xl border border-stone-300 text-slate-700 hover:bg-stone-100 text-xs font-semibold transition-colors"
             >
               Annuler
             </Link>
@@ -359,16 +466,16 @@ export default function NewMemberPage() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition-all shadow-md disabled:opacity-60 cursor-pointer"
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm disabled:opacity-60 cursor-pointer"
             >
               {loading ? (
                 <>
-                  <Loader2 size={15} className="animate-spin" />
+                  <Loader2 size={16} className="animate-spin" />
                   <span>Enregistrement en cours...</span>
                 </>
               ) : (
                 <>
-                  <UserPlus size={15} />
+                  <UserPlus size={16} />
                   <span>Enregistrer le membre</span>
                 </>
               )}
