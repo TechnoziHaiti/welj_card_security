@@ -12,6 +12,7 @@ import {
   LogOut,
   ShieldCheck,
   ExternalLink,
+  KeyRound,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -52,6 +53,11 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
       label: 'Historique des vérifications',
       href: '/admin/history',
       icon: History,
+    },
+    {
+      label: 'Gestion des Accès',
+      href: '/admin/users',
+      icon: KeyRound,
     },
   ];
 
