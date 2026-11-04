@@ -16,9 +16,10 @@ import {
 } from 'lucide-react';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createAnonClient } from '@/lib/supabase/server';
-import { hashToken, hashIpAddress } from '@/lib/crypto';
+import { hashToken, hashIpAddress, generateDynamicSecurityCode } from '@/lib/crypto';
 import { formatDateFr } from '@/lib/dates';
 import { VerificationResponse } from '@/types/database';
+import { LiveVerificationCard } from './LiveVerificationCard';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,6 +72,7 @@ export default async function VerifyTokenPage({ params }: PageProps) {
   }
 
   const { result } = verification;
+  const dynamicSecurity = generateDynamicSecurityCode(tokenHash, 30);
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200 flex flex-col items-center justify-center p-4 sm:p-6">
@@ -103,80 +105,12 @@ export default async function VerifyTokenPage({ params }: PageProps) {
         {/* CAS 1 : CARTE AUTHENTIQUE & ACTIVE                          */}
         {/* ============================================================ */}
         {result === 'valide' && (
-          <div className="bg-white rounded-2xl shadow-xl border-2 border-emerald-500 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Bannière de statut */}
-            <div className="bg-emerald-600 p-6 text-white text-center">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm ring-4 ring-white/30">
-                <ShieldCheck size={36} className="text-white" />
-              </div>
-              <span className="inline-block px-3 py-1 bg-white/25 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-1">
-                Authentique
-              </span>
-              <h2 className="text-2xl font-black tracking-tight">Carte Authentique</h2>
-              <p className="text-emerald-100 text-xs mt-1 font-medium">
-                Statut officiel : <span className="font-bold underline">Active et Valide</span>
-              </p>
-            </div>
-
-            {/* Détails du membre et de la carte */}
-            <div className="p-6 space-y-4">
-              <div className="bg-slate-50 rounded-xl p-4 border border-slate-200/80">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-emerald-700 text-white font-bold text-lg flex items-center justify-center shrink-0">
-                    <User size={22} />
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                      Titulaire du compte
-                    </span>
-                    <h3 className="text-lg font-bold text-slate-900 leading-tight">
-                      {verification.first_name} {verification.last_name}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                        <Hash size={12} />
-                        {verification.member_code}
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-slate-600 bg-slate-200/60 px-2 py-0.5 rounded-md">
-                        <Award size={12} />
-                        {verification.account_type || 'Standard'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Informations temporelles */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/70">
-                  <div className="flex items-center gap-1.5 text-slate-500 text-xs mb-1">
-                    <Calendar size={13} className="text-emerald-600" />
-                    <span>Création</span>
-                  </div>
-                  <p className="text-xs font-bold text-slate-800">
-                    {formatDateFr(verification.created_at)}
-                  </p>
-                </div>
-                <div className="bg-emerald-50/70 p-3.5 rounded-xl border border-emerald-200/80">
-                  <div className="flex items-center gap-1.5 text-emerald-800 text-xs mb-1">
-                    <Calendar size={13} className="text-emerald-600" />
-                    <span className="font-semibold">Expiration</span>
-                  </div>
-                  <p className="text-xs font-bold text-emerald-900">
-                    {formatDateFr(verification.expires_at)}
-                  </p>
-                </div>
-              </div>
-
-              {verification.card_identifier && (
-                <div className="text-center pt-2">
-                  <span className="text-[11px] text-slate-400 font-mono">
-                    Réf. carte : {verification.card_identifier}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
+          <LiveVerificationCard
+            verification={verification}
+            initialDynamicCode={dynamicSecurity.code}
+            initialValidUntil={dynamicSecurity.validUntil}
+            initialRemainingSeconds={dynamicSecurity.remainingSeconds}
+          />
         )}
 
         {/* ============================================================ */}

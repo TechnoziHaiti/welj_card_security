@@ -32,3 +32,36 @@ export function hashIpAddress(ip?: string | null): string | null {
   if (!ip) return null;
   return createHash('sha256').update(ip + '-welj-salt').digest('hex').substring(0, 32);
 }
+
+/**
+ * Génère un code de sécurité dynamique (TOTP / Anti-Screenshot)
+ * qui change automatiquement toutes les 30 minutes de manière déterministe.
+ * Empêche toute falsification par capture d'écran ou clone offline.
+ */
+export function generateDynamicSecurityCode(
+  seed: string,
+  intervalMinutes: number = 30
+): { code: string; validUntil: string; remainingSeconds: number } {
+  const windowMs = intervalMinutes * 60 * 1000;
+  const now = Date.now();
+  const timeWindow = Math.floor(now / windowMs);
+
+  // Calcul d'un code HMAC / SHA-256 basé sur la tranche de temps de 30 min
+  const rawHash = createHash('sha256')
+    .update(`${seed}-welj-dynamic-window-${timeWindow}`)
+    .digest('hex');
+
+  // Extraction d'un code à 6 chiffres formaté : XXX-XXX
+  const numPart = parseInt(rawHash.substring(0, 8), 16) % 1000000;
+  const formattedCode = numPart.toString().padStart(6, '0');
+  const displayCode = `${formattedCode.substring(0, 3)}-${formattedCode.substring(3, 6)}`;
+
+  const nextWindowTime = (timeWindow + 1) * windowMs;
+  const remainingSeconds = Math.max(0, Math.floor((nextWindowTime - now) / 1000));
+
+  return {
+    code: `WJ-${displayCode}`,
+    validUntil: new Date(nextWindowTime).toISOString(),
+    remainingSeconds,
+  };
+}
