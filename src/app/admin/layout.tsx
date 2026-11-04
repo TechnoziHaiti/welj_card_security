@@ -22,8 +22,8 @@ export default async function AdminLayout({
         userRole={userRole}
       />
 
-      {/* Zone de contenu principal en couleur #DED9D3 avec scroll vertical indépendant */}
-      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto bg-[#DED9D3] text-slate-900">
+      {/* Zone de contenu principal en blanc éclatant #FAFAFF avec scroll vertical indépendant */}
+      <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto bg-[#FAFAFF] text-slate-900">
         <main className="flex-1 p-6 sm:p-8 max-w-7xl w-full mx-auto">
           {children}
         </main>
