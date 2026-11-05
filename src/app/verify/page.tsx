@@ -39,10 +39,32 @@ export default function PublicVerifyPage() {
   const safeStopScanner = async (scanner: any) => {
     if (!scanner) return;
     try {
+      // Stopper et couper les pistes vidéo du DOM immédiatement pour éviter l'AbortError natif
+      if (typeof document !== 'undefined') {
+        const container = document.getElementById('qr-reader');
+        if (container) {
+          const video = container.querySelector('video');
+          if (video) {
+            try {
+              video.pause();
+            } catch {}
+            if (video.srcObject && 'getTracks' in (video.srcObject as MediaStream)) {
+              try {
+                (video.srcObject as MediaStream).getTracks().forEach((track) => track.stop());
+              } catch {}
+            }
+            video.srcObject = null;
+          }
+        }
+      }
+
       const state = typeof scanner.getState === 'function' ? scanner.getState() : null;
       // 2 = SCANNING, 3 = PAUSED dans html5-qrcode
       if (state === 2 || state === 3 || scanner.isScanning) {
         await scanner.stop();
+      }
+      if (typeof scanner.clear === 'function') {
+        scanner.clear();
       }
     } catch {
       // Ignorer sans planter si le scanner était déjà arrêté
@@ -182,7 +204,16 @@ export default function PublicVerifyPage() {
         }
 
         setCameraLoading(false);
-      } catch (err) {
+      } catch (err: any) {
+        // Ignorer l'AbortError bénin causé par le démontage React ou la navigation
+        if (
+          err?.name === 'AbortError' ||
+          (typeof err?.message === 'string' &&
+            (err.message.includes('play()') || err.message.includes('media was removed')))
+        ) {
+          return;
+        }
+
         console.error('Erreur caméra:', err);
         if (isMounted) {
           setCameraLoading(false);

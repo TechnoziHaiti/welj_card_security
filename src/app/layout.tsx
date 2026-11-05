@@ -29,6 +29,17 @@ export default function RootLayout({
           href="https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400&display=swap"
           rel="stylesheet"
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('unhandledrejection', function(event) {
+                if (event && event.reason && (event.reason.name === 'AbortError' || (typeof event.reason.message === 'string' && event.reason.message.indexOf('play()') !== -1))) {
+                  event.preventDefault();
+                }
+              });
+            `,
+          }}
+        />
       </head>
       <body className="h-full bg-slate-50 text-slate-900 antialiased font-sans">
         {children}
