@@ -1,18 +1,18 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { headers } from 'next/headers';
 import {
-  ShieldCheck,
   ShieldAlert,
   Clock,
   XCircle,
-  QrCode,
+  Camera,
   ArrowLeft,
-  Calendar,
   User,
   Hash,
-  Award,
-  Camera,
+  CreditCard,
+  Calendar,
+  AlertTriangle,
 } from 'lucide-react';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createAnonClient } from '@/lib/supabase/server';
@@ -47,8 +47,6 @@ export default async function VerifyTokenPage({ params }: PageProps) {
   };
 
   try {
-    // Appel sécurisé de la fonction RPC de vérification
-    // Utilise le client anon avec Security Definer, ou fallback admin
     let supabaseClient;
     try {
       supabaseClient = await createAnonClient();
@@ -68,7 +66,7 @@ export default async function VerifyTokenPage({ params }: PageProps) {
       console.error('Erreur RPC verify_card_by_token:', error);
     }
 
-    // 2. Fallback de résolution directe par identifiant de carte officiel (ex: WELJ-20260001, WELJ-2026-BEE4B3)
+    // Fallback de résolution directe par identifiant de carte officiel (ex: WELJ-20260001, WELJ-2026-BEE4B3)
     if (!verification.success) {
       const cleanToken = decodeURIComponent(token).trim();
       const { data: cardById } = await supabaseClient
@@ -110,21 +108,8 @@ export default async function VerifyTokenPage({ params }: PageProps) {
   const dynamicSecurity = generateDynamicSecurityCode(tokenHash, 30);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#010101] via-[#020617] to-[#0a152f] flex flex-col items-center justify-center p-4 sm:p-6 text-white font-sans">
-      <div className="w-full max-w-md">
-        {/* En-tête Welj Express Services */}
-        <div className="text-center mb-6">
-          <span className="inline-block px-3 py-1 rounded-full bg-blue-950/80 border border-blue-800/60 text-blue-400 text-[11px] font-black tracking-widest uppercase mb-2 shadow-sm">
-            WELJ EXPRESS SERVICES
-          </span>
-          <h1 className="text-2xl font-black text-white tracking-tight font-sans">
-            Vérification de Carte
-          </h1>
-          <p className="text-xs text-slate-400 mt-1 font-sans">
-            Résultat certifié par le registre officiel de Welj Express Services
-          </p>
-        </div>
-
+    <main className="min-h-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6 text-white font-sans relative overflow-hidden">
+      <div className="w-full max-w-md relative z-10 space-y-6">
         {/* ============================================================ */}
         {/* CAS 1 : CARTE AUTHENTIQUE & ACTIVE                          */}
         {/* ============================================================ */}
@@ -141,45 +126,80 @@ export default async function VerifyTokenPage({ params }: PageProps) {
         {/* CAS 2 : CARTE EXPIRÉE                                       */}
         {/* ============================================================ */}
         {result === 'expiree' && (
-          <div className="bg-[#0b1329] text-white rounded-2xl shadow-2xl border-2 border-amber-500/80 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-amber-600 p-6 text-white text-center">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm ring-4 ring-white/30">
-                <Clock size={36} className="text-white" />
-              </div>
-              <span className="inline-block px-3 py-1 bg-white/25 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-1">
-                Avertissement
-              </span>
-              <h2 className="text-2xl font-black tracking-tight font-sans">Carte Expirée</h2>
-              <p className="text-amber-100 text-xs mt-1">
-                La période de validité de 1 an de cette carte est dépassée.
-              </p>
-            </div>
+          <div className="relative group w-full">
+            {/* Effet lumineux néon ambre en dessous */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-4/5 h-28 bg-amber-500/25 blur-3xl rounded-full pointer-events-none" />
 
-            <div className="p-6 space-y-4">
-              <div className="bg-slate-950/80 rounded-xl p-4 border border-slate-800">
-                <span className="text-[11px] font-semibold text-amber-400 uppercase tracking-wider">
-                  Membre associé
-                </span>
-                <h3 className="text-lg font-bold text-white mt-1">
-                  {verification.first_name} {verification.last_name}
-                </h3>
-                <p className="text-xs font-mono text-slate-400 mt-0.5">
-                  Code de la carte : <span className="font-semibold text-blue-400">{verification.member_code}</span>
-                </p>
+            <div className="relative bg-black text-white rounded-3xl border border-stone-800 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_10px_30px_rgba(245,158,11,0.25)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              {/* EN-TÊTE : FOND BLANC AVEC LOGO WELJ EN GRAND PLAN */}
+              <div className="bg-white py-6 px-6 sm:py-8 flex flex-col items-center justify-center border-b border-stone-200">
+                <Image
+                  src="/logo.png"
+                  alt="Welj Express Services"
+                  width={240}
+                  height={143}
+                  className="h-20 sm:h-24 w-auto object-contain"
+                  priority
+                  unoptimized
+                />
               </div>
 
-              <div className="p-3.5 bg-rose-950/40 border border-rose-500/40 rounded-xl text-center">
-                <p className="text-xs text-rose-300 font-medium">
-                  Date d&apos;expiration échue le :
-                </p>
-                <p className="text-sm font-bold text-rose-200 mt-0.5">
-                  {formatDateFr(verification.expires_at)}
-                </p>
-              </div>
+              {/* CORPS : FULL BLACK ÉPURÉ */}
+              <div className="p-6 sm:p-8 space-y-6">
+                <div className="text-center space-y-2">
+                  <div className="w-20 h-20 rounded-full border-4 border-amber-500/30 bg-amber-500/10 flex items-center justify-center mx-auto text-amber-400 ring-8 ring-amber-500/5">
+                    <Clock size={44} className="text-amber-400" />
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-amber-400 tracking-tight font-sans">
+                    Carte Expirée
+                  </h2>
+                  <p className="text-xs text-stone-400 max-w-xs mx-auto font-sans leading-relaxed">
+                    La période de validité de 1 an de cette carte est échue. Le titulaire doit la renouveler.
+                  </p>
+                </div>
 
-              <p className="text-xs text-slate-400 text-center">
-                Le titulaire doit contacter Welj Express Services pour effectuer le renouvellement de sa carte.
-              </p>
+                <div className="divide-y divide-stone-800/80 border-y border-stone-800/80 text-xs font-sans">
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <span className="text-stone-400 uppercase tracking-wider font-semibold flex items-center gap-2">
+                      <User size={14} className="text-stone-500" />
+                      <span>Titulaire</span>
+                    </span>
+                    <span className="font-bold text-white text-sm text-right">
+                      {verification.first_name} {verification.last_name}
+                    </span>
+                  </div>
+
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <span className="text-stone-400 uppercase tracking-wider font-semibold flex items-center gap-2">
+                      <Hash size={14} className="text-stone-500" />
+                      <span>Code Client</span>
+                    </span>
+                    <span className="font-mono font-bold text-blue-400 text-sm">
+                      {verification.member_code}
+                    </span>
+                  </div>
+
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <span className="text-stone-400 uppercase tracking-wider font-semibold flex items-center gap-2">
+                      <CreditCard size={14} className="text-stone-500" />
+                      <span>Identifiant Carte</span>
+                    </span>
+                    <span className="font-mono font-bold text-slate-200 text-xs">
+                      {verification.card_identifier}
+                    </span>
+                  </div>
+
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <span className="text-stone-400 uppercase tracking-wider font-semibold flex items-center gap-2">
+                      <Calendar size={14} className="text-amber-400" />
+                      <span>Expiration</span>
+                    </span>
+                    <span className="font-bold text-amber-400 text-xs">
+                      Échue le {formatDateFr(verification.expires_at)}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -188,27 +208,80 @@ export default async function VerifyTokenPage({ params }: PageProps) {
         {/* CAS 3 : CARTE RÉVOQUÉE                                      */}
         {/* ============================================================ */}
         {result === 'revoquee' && (
-          <div className="bg-[#0b1329] text-white rounded-2xl shadow-2xl border-2 border-rose-600/80 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-rose-600 p-6 text-white text-center">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm ring-4 ring-white/30">
-                <ShieldAlert size={36} className="text-white" />
-              </div>
-              <span className="inline-block px-3 py-1 bg-white/25 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-1">
-                Interdit
-              </span>
-              <h2 className="text-2xl font-black tracking-tight">Carte Révoquée</h2>
-              <p className="text-rose-100 text-xs mt-1">
-                Cette carte n&apos;est plus autorisée dans le réseau Welj.
-              </p>
-            </div>
+          <div className="relative group w-full">
+            {/* Effet lumineux néon rouge en dessous */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-4/5 h-28 bg-red-600/25 blur-3xl rounded-full pointer-events-none" />
 
-            <div className="p-6 text-center space-y-4">
-              <div className="p-4 bg-rose-950/40 border border-rose-500/40 rounded-xl text-rose-200 text-sm font-semibold">
-                Cette carte a été invalidée ou remplacée. Elle ne confère plus aucun droit d&apos;accès.
+            <div className="relative bg-black text-white rounded-3xl border border-stone-800 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_10px_30px_rgba(239,68,68,0.25)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              {/* EN-TÊTE : FOND BLANC AVEC LOGO WELJ EN GRAND PLAN */}
+              <div className="bg-white py-6 px-6 sm:py-8 flex flex-col items-center justify-center border-b border-stone-200">
+                <Image
+                  src="/logo.png"
+                  alt="Welj Express Services"
+                  width={240}
+                  height={143}
+                  className="h-20 sm:h-24 w-auto object-contain"
+                  priority
+                  unoptimized
+                />
               </div>
-              <p className="text-xs text-slate-400">
-                Toute tentative d&apos;utilisation d&apos;une carte révoquée est consignée dans le registre de sécurité.
-              </p>
+
+              {/* CORPS : FULL BLACK ÉPURÉ */}
+              <div className="p-6 sm:p-8 space-y-6">
+                <div className="text-center space-y-2">
+                  <div className="w-20 h-20 rounded-full border-4 border-red-500/30 bg-red-500/10 flex items-center justify-center mx-auto text-red-500 ring-8 ring-red-500/5">
+                    <ShieldAlert size={44} className="text-red-500" />
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-red-500 tracking-tight font-sans">
+                    Carte Révoquée
+                  </h2>
+                  <p className="text-xs text-stone-400 max-w-xs mx-auto font-sans leading-relaxed">
+                    Cette carte a été définitivement invalidée. Elle ne confère plus aucun accès.
+                  </p>
+                </div>
+
+                <div className="divide-y divide-stone-800/80 border-y border-stone-800/80 text-xs font-sans">
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <span className="text-stone-400 uppercase tracking-wider font-semibold flex items-center gap-2">
+                      <User size={14} className="text-stone-500" />
+                      <span>Titulaire</span>
+                    </span>
+                    <span className="font-bold text-white text-sm text-right">
+                      {verification.first_name} {verification.last_name}
+                    </span>
+                  </div>
+
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <span className="text-stone-400 uppercase tracking-wider font-semibold flex items-center gap-2">
+                      <Hash size={14} className="text-stone-500" />
+                      <span>Code Client</span>
+                    </span>
+                    <span className="font-mono font-bold text-blue-400 text-sm">
+                      {verification.member_code}
+                    </span>
+                  </div>
+
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <span className="text-stone-400 uppercase tracking-wider font-semibold flex items-center gap-2">
+                      <CreditCard size={14} className="text-stone-500" />
+                      <span>Identifiant Carte</span>
+                    </span>
+                    <span className="font-mono font-bold text-slate-200 text-xs">
+                      {verification.card_identifier}
+                    </span>
+                  </div>
+
+                  <div className="py-3.5 flex items-center justify-between gap-3">
+                    <span className="text-stone-400 uppercase tracking-wider font-semibold flex items-center gap-2">
+                      <AlertTriangle size={14} className="text-red-500" />
+                      <span>Statut</span>
+                    </span>
+                    <span className="font-bold text-red-500 text-xs uppercase tracking-wide">
+                      Révoquée &bull; Accès Refusé
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -217,41 +290,58 @@ export default async function VerifyTokenPage({ params }: PageProps) {
         {/* CAS 4 : CARTE NON RECONNUE / TOKEN INVALIDE                 */}
         {/* ============================================================ */}
         {result === 'inconnue' && (
-          <div className="bg-[#0b1329] text-white rounded-2xl shadow-2xl border-2 border-red-500/80 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            <div className="bg-red-700 p-6 text-white text-center">
-              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm ring-4 ring-white/30">
-                <XCircle size={36} className="text-white" />
-              </div>
-              <span className="inline-block px-3 py-1 bg-white/25 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-1">
-                Alerte Sécurité
-              </span>
-              <h2 className="text-2xl font-black tracking-tight font-sans">Carte Non Reconnue</h2>
-              <p className="text-red-100 text-xs mt-1">
-                Cette carte n&apos;existe pas dans le système officiel de Welj.
-              </p>
-            </div>
+          <div className="relative group w-full">
+            {/* Effet lumineux néon rouge en dessous */}
+            <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-4/5 h-28 bg-red-600/25 blur-3xl rounded-full pointer-events-none" />
 
-            <div className="p-6 text-center space-y-4">
-              <div className="p-4 bg-red-950/40 border border-red-500/40 rounded-xl text-red-200 text-xs text-left">
-                <p className="font-semibold mb-1 text-red-100">Motifs possibles :</p>
-                <ul className="list-disc list-inside space-y-1 text-red-200">
-                  <li>Tentative de contrefaçon ou falsification de QR Code.</li>
-                  <li>Lien ou token incomplet ou altéré lors du scan.</li>
-                  <li>Carte provenant d&apos;un émetteur tiers non agréé.</li>
-                </ul>
+            <div className="relative bg-black text-white rounded-3xl border border-stone-800 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_10px_30px_rgba(239,68,68,0.25)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              {/* EN-TÊTE : FOND BLANC AVEC LOGO WELJ EN GRAND PLAN */}
+              <div className="bg-white py-6 px-6 sm:py-8 flex flex-col items-center justify-center border-b border-stone-200">
+                <Image
+                  src="/logo.png"
+                  alt="Welj Express Services"
+                  width={240}
+                  height={143}
+                  className="h-20 sm:h-24 w-auto object-contain"
+                  priority
+                  unoptimized
+                />
               </div>
-              <p className="text-xs text-slate-400">
-                Aucune information de membre n&apos;est disponible pour les tokens invalides.
-              </p>
+
+              {/* CORPS : FULL BLACK ÉPURÉ (STYLE EXACT DE LA PHOTO 2) */}
+              <div className="p-6 sm:p-8 space-y-6">
+                <div className="text-center space-y-2">
+                  <div className="w-20 h-20 rounded-full border-4 border-red-500/30 bg-red-500/10 flex items-center justify-center mx-auto text-red-500 ring-8 ring-red-500/5">
+                    <XCircle size={44} className="text-red-500" />
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black text-red-500 tracking-tight font-sans">
+                    Carte Non Reconnue
+                  </h2>
+                  <p className="text-xs text-stone-400 max-w-xs mx-auto font-sans leading-relaxed">
+                    Cette carte n&apos;existe pas dans le système officiel de Welj Express Services.
+                  </p>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-stone-900/90 border border-stone-800 text-xs text-stone-300 space-y-2 font-sans">
+                  <p className="font-bold text-red-400 uppercase text-[10px] tracking-wider">
+                    Motifs de sécurité possibles :
+                  </p>
+                  <ul className="list-disc list-inside space-y-1 text-stone-400 text-[11px]">
+                    <li>Tentative de falsification ou contrefaçon de QR Code.</li>
+                    <li>Lien ou code incomplet ou altéré.</li>
+                    <li>Carte non émise par Welj Express Services.</li>
+                  </ul>
+                </div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Pied de page et bouton nouvelle vérification */}
-        <div className="mt-6 flex flex-col items-center gap-3">
+        {/* Boutons d'action en bas (style propre et lisible) */}
+        <div className="flex flex-col items-center gap-3 pt-2">
           <Link
             href="/verify"
-            className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-sm shadow-xl shadow-blue-950/50 transition-all hover:scale-[1.01]"
+            className="w-full inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-500 active:bg-blue-700 text-white font-bold text-sm shadow-xl shadow-blue-950/60 transition-all font-sans"
           >
             <Camera size={18} />
             <span>Scanner la carte suivante</span>
@@ -259,14 +349,14 @@ export default async function VerifyTokenPage({ params }: PageProps) {
 
           <Link
             href="/login"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs text-stone-400 hover:text-white transition-colors font-sans py-1"
           >
             <ArrowLeft size={13} />
             <span>Accès Administrateur Welj</span>
           </Link>
         </div>
 
-        <p className="text-center text-[10px] text-slate-500 mt-6 font-mono">
+        <p className="text-center text-[10px] text-stone-500 font-sans tracking-wide">
           Welj Express Services &copy; {new Date().getFullYear()} &bull; Sécurité &amp; Traçabilité
         </p>
       </div>
