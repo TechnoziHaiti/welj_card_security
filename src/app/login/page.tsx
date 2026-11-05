@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -11,6 +11,8 @@ import {
   AlertCircle,
   Loader2,
   QrCode,
+  Clock,
+  Camera,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -18,6 +20,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo') || '/admin/dashboard';
+  const reason = searchParams.get('reason');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,6 +28,13 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
 
   const supabase = createClient();
+
+  useEffect(() => {
+    // Si déconnecté pour inactivité, nettoyer la session côté client
+    if (reason === 'inactivity') {
+      supabase.auth.signOut();
+    }
+  }, [reason, supabase]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,10 +59,15 @@ function LoginForm() {
 
       if (data.user) {
         const userRole = data.user.user_metadata?.role;
-        if (userRole === 'agent') {
+        // Enregistrer l'activité initiale (30 minutes)
+        document.cookie = `welj_last_activity=${Date.now()}; path=/; max-age=1800; SameSite=Lax`;
+
+        if (redirectTo && redirectTo !== '/login') {
+          router.push(redirectTo);
+        } else if (userRole === 'agent') {
           router.push('/verify');
         } else {
-          router.push(redirectTo);
+          router.push('/admin/dashboard');
         }
         router.refresh();
       }
@@ -62,14 +77,34 @@ function LoginForm() {
     }
   };
 
+  const isScanningTarget = redirectTo.startsWith('/verify');
+
   return (
     <form className="space-y-5" onSubmit={handleLogin}>
+      {reason === 'inactivity' && (
+        <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3.5 flex items-start gap-2.5 text-amber-300 text-xs font-medium">
+          <Clock size={16} className="shrink-0 mt-0.5 text-amber-400" />
+          <span>
+            Votre session a expiré après 30 minutes d&apos;inactivité. Veuillez vous reconnecter pour continuer.
+          </span>
+        </div>
+      )}
+
+      {isScanningTarget && reason !== 'inactivity' && (
+        <div className="rounded-xl bg-blue-500/10 border border-blue-500/30 p-3.5 flex items-start gap-2.5 text-blue-300 text-xs font-medium">
+          <Camera size={16} className="shrink-0 mt-0.5 text-blue-400" />
+          <span>
+            Authentification requise pour activer et utiliser le scanner de cartes.
+          </span>
+        </div>
+      )}
+
       <div>
         <label
           htmlFor="email"
           className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5"
         >
-          Adresse Email Administrateur
+          Adresse Email
         </label>
         <div className="relative rounded-xl shadow-sm">
           <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
@@ -81,7 +116,7 @@ function LoginForm() {
             type="email"
             autoComplete="email"
             required
-            placeholder="admin@welj-express.com"
+            placeholder="utilisateur@welj-express.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             className="block w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-950/80 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
@@ -134,7 +169,7 @@ function LoginForm() {
             </>
           ) : (
             <>
-              <span>Se connecter au Dashboard</span>
+              <span>{isScanningTarget ? 'Se connecter au Scanner' : 'Se connecter au Dashboard'}</span>
               <ArrowRight size={16} />
             </>
           )}

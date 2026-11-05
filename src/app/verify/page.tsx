@@ -1,7 +1,7 @@
 // Scanner officiel de vérification des cartes Welj
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -9,14 +9,31 @@ import {
   AlertCircle,
   ArrowLeft,
   Loader2,
+  LogOut,
+  ShieldCheck,
 } from 'lucide-react';
+import { createClient } from '@/lib/supabase/client';
+
+const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes d'inactivité
 
 export default function PublicVerifyPage() {
   const router = useRouter();
   const [error, setError] = useState('');
   const [isScanning, setIsScanning] = useState(true);
   const [cameraLoading, setCameraLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [authChecking, setAuthChecking] = useState(true);
   const scannerRef = useRef<any>(null);
+  const lastActivityRef = useRef<number>(Date.now());
+
+  // Rafraîchir l'horodatage d'activité utilisateur (30 minutes)
+  const refreshActivity = useCallback(() => {
+    const now = Date.now();
+    lastActivityRef.current = now;
+    if (typeof document !== 'undefined') {
+      document.cookie = `welj_last_activity=${now}; path=/; max-age=1800; SameSite=Lax`;
+    }
+  }, []);
 
   // Arrêt sécurisé du scanner sans déclencher d'exception html5-qrcode
   const safeStopScanner = async (scanner: any) => {
@@ -32,6 +49,17 @@ export default function PublicVerifyPage() {
     }
   };
 
+  // Déconnexion manuelle
+  const handleLogout = async () => {
+    await safeStopScanner(scannerRef.current);
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    if (typeof document !== 'undefined') {
+      document.cookie = 'welj_last_activity=; path=/; max-age=0; SameSite=Lax';
+    }
+    router.push('/login');
+  };
+
   // Parse token if full URL is read by camera
   const extractToken = (raw: string): string => {
     const trimmed = raw.trim();
@@ -42,9 +70,72 @@ export default function PublicVerifyPage() {
     return trimmed;
   };
 
-  // Démarrage automatique de la caméra au chargement
+  // 1. Vérification de l'authentification obligatoire pour le scanner
   useEffect(() => {
-    if (!isScanning) return;
+    const supabase = createClient();
+    const checkAuth = async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          router.push('/login?redirectTo=/verify');
+          return;
+        }
+        setCurrentUser(user);
+        setAuthChecking(false);
+        refreshActivity();
+      } catch {
+        router.push('/login?redirectTo=/verify');
+      }
+    };
+
+    checkAuth();
+  }, [router, refreshActivity]);
+
+  // 2. Gestion de l'inactivité de 30 minutes
+  useEffect(() => {
+    if (authChecking || !currentUser) return;
+
+    const handleUserInteraction = () => {
+      // Rafraîchir si plus de 10s depuis le dernier horodatage
+      if (Date.now() - lastActivityRef.current > 10000) {
+        refreshActivity();
+      }
+    };
+
+    window.addEventListener('mousemove', handleUserInteraction, { passive: true });
+    window.addEventListener('mousedown', handleUserInteraction, { passive: true });
+    window.addEventListener('touchstart', handleUserInteraction, { passive: true });
+    window.addEventListener('keydown', handleUserInteraction, { passive: true });
+    window.addEventListener('scroll', handleUserInteraction, { passive: true });
+
+    // Vérifier l'expiration toutes les 15 secondes
+    const interval = setInterval(async () => {
+      const elapsed = Date.now() - lastActivityRef.current;
+      if (elapsed >= INACTIVITY_TIMEOUT_MS) {
+        clearInterval(interval);
+        await safeStopScanner(scannerRef.current);
+        const supabase = createClient();
+        await supabase.auth.signOut();
+        if (typeof document !== 'undefined') {
+          document.cookie = 'welj_last_activity=; path=/; max-age=0; SameSite=Lax';
+        }
+        router.push('/login?reason=inactivity&redirectTo=/verify');
+      }
+    }, 15000);
+
+    return () => {
+      window.removeEventListener('mousemove', handleUserInteraction);
+      window.removeEventListener('mousedown', handleUserInteraction);
+      window.removeEventListener('touchstart', handleUserInteraction);
+      window.removeEventListener('keydown', handleUserInteraction);
+      window.removeEventListener('scroll', handleUserInteraction);
+      clearInterval(interval);
+    };
+  }, [authChecking, currentUser, refreshActivity, router]);
+
+  // 3. Démarrage de la caméra uniquement après confirmation de l'authentification
+  useEffect(() => {
+    if (!isScanning || authChecking || !currentUser) return;
 
     let html5QrCodeScanner: any = null;
     let isMounted = true;
@@ -66,7 +157,8 @@ export default function PublicVerifyPage() {
             aspectRatio: 1.0,
           },
           async (decodedText: string) => {
-            // Scan réussi : petite vibration tactile si supportée
+            // Scan réussi : réinitialiser l'activité et petite vibration
+            refreshActivity();
             if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
               try {
                 navigator.vibrate(100);
@@ -108,7 +200,16 @@ export default function PublicVerifyPage() {
       scannerRef.current = null;
       safeStopScanner(scanner);
     };
-  }, [isScanning, router]);
+  }, [isScanning, authChecking, currentUser, router, refreshActivity]);
+
+  if (authChecking) {
+    return (
+      <main className="min-h-screen bg-[#010101] flex flex-col items-center justify-center p-6 text-white font-sans">
+        <Loader2 size={36} className="animate-spin text-blue-500 mb-3" />
+        <p className="text-xs text-slate-400 font-medium">Vérification de l&apos;accès au scanner...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-[#010101] relative overflow-hidden flex flex-col items-center justify-center p-3 sm:p-6 text-white selection:bg-blue-600 selection:text-white font-sans">
@@ -175,15 +276,33 @@ export default function PublicVerifyPage() {
           )}
         </div>
 
-        {/* Accès Administration */}
-        <div className="mt-5 flex flex-col items-center gap-2">
-          <Link
-            href="/login"
-            className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
-          >
-            <ArrowLeft size={13} />
-            <span>Accès Espace Administrateur</span>
-          </Link>
+        {/* Contrôle de Session et Accès Administration */}
+        <div className="mt-5 flex flex-col items-center gap-3">
+          <div className="flex items-center gap-4 text-xs">
+            {currentUser?.user_metadata?.role === 'admin' ? (
+              <Link
+                href="/admin/dashboard"
+                className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors"
+              >
+                <ArrowLeft size={13} />
+                <span>Espace Administration</span>
+              </Link>
+            ) : (
+              <span className="text-[11px] text-slate-400 font-medium">
+                Session active &bull; Déconnexion auto (30m)
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+            >
+              <LogOut size={13} />
+              <span>Déconnexion</span>
+            </button>
+          </div>
+
           <p className="text-[10px] text-slate-500 font-mono">
             Welj Express Services &bull; Module de Sécurité v1.0
           </p>

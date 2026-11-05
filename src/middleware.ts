@@ -40,6 +40,7 @@ export async function middleware(request: NextRequest) {
   const isAccessingAdmin = request.nextUrl.pathname.startsWith('/admin');
   const isAccessingUsers = request.nextUrl.pathname.startsWith('/admin/users');
   const isAccessingNewMember = request.nextUrl.pathname.startsWith('/admin/members/new');
+  const isAccessingVerify = request.nextUrl.pathname.startsWith('/verify');
   const isAccessingLogin = request.nextUrl.pathname === '/login';
 
   // Redirection automatique de courtoisie /signin -> /login
@@ -47,13 +48,45 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  // Protection des routes d'administration
-  if (isAccessingAdmin) {
+  const isProtected = isAccessingAdmin || isAccessingVerify;
+  const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes d'inactivité
+  const now = Date.now();
+
+  // Protection des routes d'administration et du scanner de vérification
+  if (isProtected) {
     if (!user) {
       const redirectUrl = new URL('/login', request.url);
       redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
       return NextResponse.redirect(redirectUrl);
     }
+
+    // Vérification de l'inactivité (30 minutes)
+    const lastActivityCookie = request.cookies.get('welj_last_activity')?.value;
+    if (lastActivityCookie) {
+      const lastActivity = parseInt(lastActivityCookie, 10);
+      if (!isNaN(lastActivity) && now - lastActivity > INACTIVITY_TIMEOUT_MS) {
+        const redirectUrl = new URL('/login', request.url);
+        redirectUrl.searchParams.set('reason', 'inactivity');
+        redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname);
+
+        const logoutResponse = NextResponse.redirect(redirectUrl);
+        logoutResponse.cookies.delete('welj_last_activity');
+        request.cookies.getAll().forEach((c) => {
+          if (c.name.startsWith('sb-')) {
+            logoutResponse.cookies.delete(c.name);
+          }
+        });
+        return logoutResponse;
+      }
+    }
+
+    // Actualiser le cookie de dernière activité
+    response.cookies.set('welj_last_activity', now.toString(), {
+      path: '/',
+      httpOnly: false,
+      sameSite: 'lax',
+      maxAge: 30 * 60,
+    });
 
     const role = user.app_metadata?.role || user.user_metadata?.role || 'agent';
 
@@ -71,11 +104,18 @@ export async function middleware(request: NextRequest) {
 
   // Redirection si déjà connecté et tente d'aller sur /login
   if (isAccessingLogin && user) {
-    const role = user.app_metadata?.role || user.user_metadata?.role || 'agent';
-    if (role === 'agent') {
-      return NextResponse.redirect(new URL('/verify', request.url));
+    const reason = request.nextUrl.searchParams.get('reason');
+    if (reason !== 'inactivity') {
+      const role = user.app_metadata?.role || user.user_metadata?.role || 'agent';
+      const redirectToParam = request.nextUrl.searchParams.get('redirectTo');
+      if (redirectToParam) {
+        return NextResponse.redirect(new URL(redirectToParam, request.url));
+      }
+      if (role === 'agent') {
+        return NextResponse.redirect(new URL('/verify', request.url));
+      }
+      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
-    return NextResponse.redirect(new URL('/admin/dashboard', request.url));
   }
 
   return response;
@@ -84,6 +124,8 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     '/admin/:path*',
+    '/verify',
+    '/verify/:path*',
     '/login',
     '/signin',
   ],
