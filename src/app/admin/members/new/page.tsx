@@ -296,17 +296,12 @@ export default function NewMemberPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* CHAMP 1 : CODE CLIENT (OBLIGATOIRE, SAISIE MANUELLE) */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label
-                    htmlFor="clientCode"
-                    className="block text-xs font-semibold text-slate-700 uppercase tracking-wider"
-                  >
-                    Code Client *
-                  </label>
-                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                    Saisie Obligatoire
-                  </span>
-                </div>
+                <label
+                  htmlFor="clientCode"
+                  className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2"
+                >
+                  Code Client *
+                </label>
                 <div className="relative">
                   <User size={16} className="absolute left-3.5 top-3.5 text-stone-400" />
                   <input
@@ -326,18 +321,12 @@ export default function NewMemberPage() {
 
               {/* CHAMP 2 : CODE DE LA CARTE (AUTOMATIQUEMENT REMPLI SELON LA LOGIQUE) */}
               <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label
-                    htmlFor="memberCode"
-                    className="block text-xs font-semibold text-slate-700 uppercase tracking-wider"
-                  >
-                    Code de la Carte
-                  </label>
-                  <span className="text-[10px] font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200 flex items-center gap-1 uppercase tracking-wider">
-                    <Sparkles size={12} />
-                    Rempli Automatiquement
-                  </span>
-                </div>
+                <label
+                  htmlFor="memberCode"
+                  className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2"
+                >
+                  Code de la Carte
+                </label>
                 <div className="relative">
                   <Hash size={16} className="absolute left-3.5 top-3.5 text-blue-600" />
                   <input
