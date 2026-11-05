@@ -336,7 +336,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                 </div>
                 <div>
                   <h3 className="text-base font-bold leading-tight">Donner un Nouvel Accès</h3>
-                  <p className="text-xs text-slate-500">Création de compte administrateur ou agent</p>
+                  <p className="text-xs text-slate-500">Création d&apos;un compte d&apos;accès</p>
                 </div>
               </div>
               <button
@@ -396,25 +396,6 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                     className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Rôle Attribué
-                </label>
-                <select
-                  value={role}
-                  onChange={(e) => setRole(e.target.value as 'admin' | 'agent')}
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                >
-                  <option value="agent">Agent de Contrôle (Accès vérification &amp; lecture)</option>
-                  <option value="admin">Administrateur (Gestion totale, cartes et membres)</option>
-                </select>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  {role === 'agent'
-                    ? 'L\'agent aura accès au scanner et pourra consulter les membres, sans pouvoir modifier ou supprimer.'
-                    : 'L\'administrateur aura tous les accès, y compris la gestion des utilisateurs et suppression.'}
-                </p>
               </div>
 
               <div className="pt-3 flex gap-2 justify-end">
