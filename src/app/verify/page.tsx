@@ -146,9 +146,11 @@ export default function PublicVerifyPage() {
 
               <div id="qr-reader" className="w-full h-full object-cover" />
 
-              {/* Laser de scan animé stylisé */}
+              {/* Laser de scan fluorescent avec mouvement monter/descendre */}
               {!cameraLoading && (
-                <div className="absolute inset-x-8 top-1/2 h-0.5 bg-blue-400 shadow-[0_0_14px_#38bdf8] z-10 pointer-events-none animate-pulse" />
+                <div className="laser-scanner-container">
+                  <div className="laser-fluorescent-bar" />
+                </div>
               )}
             </div>
           </div>
