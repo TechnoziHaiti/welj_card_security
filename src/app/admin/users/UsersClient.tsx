@@ -301,7 +301,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                           <button
                             onClick={() => handleDeleteUser(user)}
                             disabled={deletingId === user.id}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-semibold transition-colors disabled:opacity-50 cursor-pointer"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border border-red-600 text-[11px] font-bold shadow-sm transition-colors disabled:opacity-50 cursor-pointer"
                             title="Révoquer cet accès"
                           >
                             {deletingId === user.id ? (

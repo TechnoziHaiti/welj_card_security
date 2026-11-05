@@ -406,7 +406,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                       <button
                         onClick={() => handleToggleMemberStatus('inactif')}
                         disabled={actionLoading}
-                        className="px-3 py-1.5 rounded-lg bg-amber-50 hover:bg-amber-100 text-amber-800 font-semibold text-[11px] border border-amber-200 transition-colors"
+                        className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold text-[11px] shadow-sm border border-amber-500 transition-colors"
                       >
                         Désactiver le compte
                       </button>
@@ -414,7 +414,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                       <button
                         onClick={() => handleToggleMemberStatus('actif')}
                         disabled={actionLoading}
-                        className="px-3 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-[11px] border border-blue-200 transition-colors"
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-[11px] shadow-sm border border-emerald-600 transition-colors"
                       >
                         Réactiver le compte
                       </button>
@@ -424,7 +424,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                       <button
                         onClick={() => handleToggleMemberStatus('suspendu')}
                         disabled={actionLoading}
-                        className="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 font-semibold text-[11px] border border-rose-200 transition-colors"
+                        className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-[11px] shadow-sm border border-red-600 transition-colors"
                       >
                         Suspendre
                       </button>
