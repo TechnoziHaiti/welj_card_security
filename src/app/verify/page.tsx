@@ -39,25 +39,6 @@ export default function PublicVerifyPage() {
   const safeStopScanner = async (scanner: any) => {
     if (!scanner) return;
     try {
-      // Stopper et couper les pistes vidéo du DOM immédiatement pour éviter l'AbortError natif
-      if (typeof document !== 'undefined') {
-        const container = document.getElementById('qr-reader');
-        if (container) {
-          const video = container.querySelector('video');
-          if (video) {
-            try {
-              video.pause();
-            } catch {}
-            if (video.srcObject && 'getTracks' in (video.srcObject as MediaStream)) {
-              try {
-                (video.srcObject as MediaStream).getTracks().forEach((track) => track.stop());
-              } catch {}
-            }
-            video.srcObject = null;
-          }
-        }
-      }
-
       const state = typeof scanner.getState === 'function' ? scanner.getState() : null;
       // 2 = SCANNING, 3 = PAUSED dans html5-qrcode
       if (state === 2 || state === 3 || scanner.isScanning) {
@@ -161,6 +142,7 @@ export default function PublicVerifyPage() {
 
     let html5QrCodeScanner: any = null;
     let isMounted = true;
+    let isStarting = true;
     setCameraLoading(true);
 
     const startScanner = async () => {
@@ -198,6 +180,8 @@ export default function PublicVerifyPage() {
           }
         );
 
+        isStarting = false;
+
         if (!isMounted) {
           await safeStopScanner(html5QrCodeScanner);
           return;
@@ -205,11 +189,15 @@ export default function PublicVerifyPage() {
 
         setCameraLoading(false);
       } catch (err: any) {
+        isStarting = false;
         // Ignorer l'AbortError bénin causé par le démontage React ou la navigation
         if (
           err?.name === 'AbortError' ||
           (typeof err?.message === 'string' &&
-            (err.message.includes('play()') || err.message.includes('media was removed')))
+            (err.message.includes('play()') ||
+              err.message.includes('pause()') ||
+              err.message.includes('media was removed') ||
+              err.message.includes('interrupted')))
         ) {
           return;
         }
@@ -229,7 +217,9 @@ export default function PublicVerifyPage() {
       isMounted = false;
       const scanner = scannerRef.current;
       scannerRef.current = null;
-      safeStopScanner(scanner);
+      if (!isStarting) {
+        safeStopScanner(scanner);
+      }
     };
   }, [isScanning, authChecking, currentUser, router, refreshActivity]);
 

@@ -32,11 +32,29 @@ export default function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
-              window.addEventListener('unhandledrejection', function(event) {
-                if (event && event.reason && (event.reason.name === 'AbortError' || (typeof event.reason.message === 'string' && event.reason.message.indexOf('play()') !== -1))) {
-                  event.preventDefault();
+              (function() {
+                if (typeof window !== 'undefined' && window.HTMLMediaElement) {
+                  var originalPlay = HTMLMediaElement.prototype.play;
+                  HTMLMediaElement.prototype.play = function() {
+                    var res = originalPlay.apply(this, arguments);
+                    if (res && typeof res.catch === 'function') {
+                      return res.catch(function(err) {
+                        if (err && (err.name === 'AbortError' || (typeof err.message === 'string' && (err.message.indexOf('play()') !== -1 || err.message.indexOf('pause()') !== -1 || err.message.indexOf('interrupted') !== -1)))) {
+                          return;
+                        }
+                        return Promise.reject(err);
+                      });
+                    }
+                    return res;
+                  };
                 }
-              });
+                window.addEventListener('unhandledrejection', function(event) {
+                  var reason = event && event.reason;
+                  if (reason && (reason.name === 'AbortError' || (typeof reason.message === 'string' && (reason.message.indexOf('play()') !== -1 || reason.message.indexOf('pause()') !== -1 || reason.message.indexOf('interrupted') !== -1 || reason.message.indexOf('removed') !== -1)))) {
+                    event.preventDefault();
+                  }
+                });
+              })();
             `,
           }}
         />
