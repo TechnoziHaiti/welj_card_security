@@ -172,7 +172,17 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
       return;
     }
 
-    if (!confirm(`Confirmer le renouvellement de la carte ${oldCard.card_identifier} ? L'ancienne carte sera immédiatement révoquée et un nouveau QR code sera produit.`)) {
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm(
+          `CONFIRMATION WEB - RENOUVELLEMENT DE CARTE\n\n` +
+          `Confirmer le renouvellement de la carte ${oldCard.card_identifier} pour ${member.first_name} ${member.last_name} pour 1 an ?\n\n` +
+          `• L'ancienne carte sera immédiatement révoquée.\n` +
+          `• Un nouveau QR Code officiel et sécurisé sera émis.\n\n` +
+          `Cliquez sur OK pour confirmer ou Annuler pour abandonner.`
+        )
+      : true;
+
+    if (!confirmed) {
       return;
     }
 
@@ -294,23 +304,14 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
           </div>
         </div>
 
-        {/* Action Rapide Création Carte */}
-        <div className="flex items-center gap-2">
-          {isAdmin ? (
-            <button
-              onClick={handleCreateNewCard}
-              disabled={actionLoading || member.status !== 'actif'}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
-            >
-              <PlusCircle size={15} />
-              <span>Émettre une carte</span>
-            </button>
-          ) : (
+        {/* Indicateur de rôle si non-admin */}
+        {!isAdmin && (
+          <div className="flex items-center gap-2">
             <div className="px-3 py-1.5 rounded-xl bg-white border border-stone-300 text-[11px] text-slate-600 font-medium shadow-sm">
               Mode Consultation (Lecture seule)
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       {/* Messages d'alerte */}

@@ -80,7 +80,18 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
 
   // Renouvellement d'une carte
   const handleRenew = async (oldCard: Card & { members?: Member }) => {
-    if (!confirm(`Confirmer le renouvellement de la carte ${oldCard.card_identifier} pour 1 an ?`)) return;
+    const memberName = oldCard.members ? `${oldCard.members.first_name} ${oldCard.members.last_name}` : 'du membre';
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm(
+          `CONFIRMATION WEB - RENOUVELLEMENT DE CARTE\n\n` +
+          `Confirmer le renouvellement de la carte ${oldCard.card_identifier} (${memberName}) pour 1 an ?\n\n` +
+          `• L'ancienne carte sera immédiatement révoquée.\n` +
+          `• Un nouveau QR Code officiel et sécurisé sera émis.\n\n` +
+          `Cliquez sur OK pour confirmer ou Annuler pour abandonner.`
+        )
+      : true;
+
+    if (!confirmed) return;
 
     setActionLoading(true);
     setAlert(null);
