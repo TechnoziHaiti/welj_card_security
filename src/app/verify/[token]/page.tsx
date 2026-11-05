@@ -67,6 +67,41 @@ export default async function VerifyTokenPage({ params }: PageProps) {
     } else if (error) {
       console.error('Erreur RPC verify_card_by_token:', error);
     }
+
+    // 2. Fallback de résolution directe par identifiant de carte officiel (ex: WELJ-20260001, WELJ-2026-BEE4B3)
+    if (!verification.success) {
+      const cleanToken = decodeURIComponent(token).trim();
+      const { data: cardById } = await supabaseClient
+        .from('cards')
+        .select('*, members(*)')
+        .or(`card_identifier.eq.${cleanToken},card_identifier.ilike.${cleanToken}`)
+        .maybeSingle();
+
+      if (cardById) {
+        const isRevoked = cardById.status === 'revoquee';
+        const isExpired = new Date(cardById.expires_at) < new Date();
+        const computedResult = isRevoked ? 'revoquee' : isExpired ? 'expiree' : 'valide';
+
+        verification = {
+          success: computedResult === 'valide',
+          result: computedResult as any,
+          message:
+            computedResult === 'valide'
+              ? 'Carte officielle valide et certifiée.'
+              : computedResult === 'expiree'
+              ? 'Cette carte a dépassé sa date d\'expiration.'
+              : 'Cette carte a été révoquée.',
+          card_identifier: cardById.card_identifier,
+          first_name: cardById.members?.first_name,
+          last_name: cardById.members?.last_name,
+          member_code: cardById.members?.member_code,
+          account_type: cardById.members?.account_type,
+          created_at: cardById.created_at,
+          expires_at: cardById.expires_at,
+          revoked_at: cardById.revoked_at,
+        };
+      }
+    }
   } catch (err) {
     console.error('Erreur lors de la vérification:', err);
   }
@@ -75,17 +110,17 @@ export default async function VerifyTokenPage({ params }: PageProps) {
   const dynamicSecurity = generateDynamicSecurityCode(tokenHash, 30);
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-[#010101] via-[#020617] to-[#0a152f] flex flex-col items-center justify-center p-4 sm:p-6 text-white">
+    <main className="min-h-screen bg-gradient-to-b from-[#010101] via-[#020617] to-[#0a152f] flex flex-col items-center justify-center p-4 sm:p-6 text-white font-sans">
       <div className="w-full max-w-md">
         {/* En-tête Welj Express Services */}
         <div className="text-center mb-6">
           <span className="inline-block px-3 py-1 rounded-full bg-blue-950/80 border border-blue-800/60 text-blue-400 text-[11px] font-black tracking-widest uppercase mb-2 shadow-sm">
             WELJ EXPRESS SERVICES
           </span>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-2xl font-black text-white tracking-tight font-sans">
             Vérification de Carte
           </h1>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-slate-400 mt-1 font-sans">
             Résultat certifié par le registre officiel de Welj Express Services
           </p>
         </div>
@@ -114,7 +149,7 @@ export default async function VerifyTokenPage({ params }: PageProps) {
               <span className="inline-block px-3 py-1 bg-white/25 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-1">
                 Avertissement
               </span>
-              <h2 className="text-2xl font-black tracking-tight">Carte Expirée</h2>
+              <h2 className="text-2xl font-black tracking-tight font-sans">Carte Expirée</h2>
               <p className="text-amber-100 text-xs mt-1">
                 La période de validité de 1 an de cette carte est dépassée.
               </p>
@@ -190,7 +225,7 @@ export default async function VerifyTokenPage({ params }: PageProps) {
               <span className="inline-block px-3 py-1 bg-white/25 backdrop-blur-md rounded-full text-xs font-bold uppercase tracking-wider mb-1">
                 Alerte Sécurité
               </span>
-              <h2 className="text-2xl font-black tracking-tight">Carte Non Reconnue</h2>
+              <h2 className="text-2xl font-black tracking-tight font-sans">Carte Non Reconnue</h2>
               <p className="text-red-100 text-xs mt-1">
                 Cette carte n&apos;existe pas dans le système officiel de Welj.
               </p>

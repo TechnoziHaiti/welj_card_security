@@ -26,7 +26,7 @@ export function QrCodeModal({ isOpen, onClose, card, member, rawToken }: QrCodeM
   const verificationUrl = rawToken
     ? `${baseUrl}/verify/${encodeURIComponent(rawToken.trim())}`
     : card
-    ? `${baseUrl}/verify?cardId=${card.card_identifier}`
+    ? `${baseUrl}/verify/${encodeURIComponent(card.card_identifier)}`
     : '';
 
   useEffect(() => {
