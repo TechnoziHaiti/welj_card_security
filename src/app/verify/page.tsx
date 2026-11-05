@@ -111,7 +111,7 @@ export default function PublicVerifyPage() {
   }, [isScanning, router]);
 
   return (
-    <main className="min-h-screen bg-[#010101] relative overflow-hidden flex flex-col items-center justify-center p-3 sm:p-6 text-white selection:bg-blue-600 selection:text-white">
+    <main className="min-h-screen bg-[#010101] relative overflow-hidden flex flex-col items-center justify-center p-3 sm:p-6 text-white selection:bg-blue-600 selection:text-white font-sans">
       {/* Halo lumineux ambiant bleu nuit / noir */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[380px] bg-gradient-to-b from-blue-600/20 via-blue-900/10 to-transparent blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[750px] h-[350px] bg-gradient-to-t from-blue-950/25 to-transparent blur-3xl pointer-events-none" />

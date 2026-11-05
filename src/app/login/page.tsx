@@ -146,15 +146,12 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#010101] via-[#020617] to-[#0a152f] flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-white">
+    <div className="min-h-screen bg-gradient-to-b from-[#010101] via-[#020617] to-[#0a152f] flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-white font-sans">
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
-        <span className="inline-block px-3 py-1 rounded-full bg-blue-950/80 border border-blue-800/60 text-blue-400 text-[11px] font-black tracking-widest uppercase mb-2 shadow-sm">
-          WELJ EXPRESS SERVICES
-        </span>
-        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight font-sans">
           Espace d&apos;Administration
         </h1>
-        <p className="mt-1 text-xs text-slate-400 font-medium">
+        <p className="mt-1 text-xs text-slate-400 font-medium font-sans">
           Connexion sécurisée au registre officiel
         </p>
       </div>
@@ -164,12 +161,6 @@ export default function LoginPage() {
           <Suspense fallback={<div className="py-8 text-center text-xs text-slate-400">Chargement...</div>}>
             <LoginForm />
           </Suspense>
-
-          <div className="mt-6 border-t border-slate-800/80 pt-4 text-center">
-            <p className="text-[11px] text-slate-500">
-              Accès strictement restreint au personnel habilité de Welj Express Services.
-            </p>
-          </div>
         </div>
 
         {/* Accès rapide au vérificateur public pour les agents */}
