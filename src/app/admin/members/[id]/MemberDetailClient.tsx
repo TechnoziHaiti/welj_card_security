@@ -130,7 +130,8 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
     try {
       const rawToken = generateSecureToken(32);
       const tokenHash = hashToken(rawToken);
-      const cardIdentifier = generateCardIdentifier();
+      const existingCount = cards.filter((c) => c.member_id === member.id).length;
+      const cardIdentifier = generateCardIdentifier(member.member_code, existingCount > 0 ? `R${existingCount}` : undefined);
       const now = new Date();
       const expiresAt = calculateExpirationDate(now);
 
@@ -192,7 +193,8 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
       // 2. Création de la nouvelle carte liée
       const rawToken = generateSecureToken(32);
       const tokenHash = hashToken(rawToken);
-      const cardIdentifier = generateCardIdentifier();
+      const existingCount = cards.filter((c) => c.member_id === member.id).length;
+      const cardIdentifier = generateCardIdentifier(member.member_code, `R${existingCount}`);
       const expiresAt = calculateExpirationDate(now);
 
       const { data: newCard, error: newCardError } = await supabase
@@ -525,7 +527,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                   <div>
                     <span className="text-[10px] text-blue-300 uppercase block">Titulaire</span>
                     <span className="font-bold text-sm block">{member.first_name} {member.last_name}</span>
-                    <span className="text-[11px] font-mono text-blue-200">Code Carte : {member.member_code}</span>
+                    <span className="text-[11px] font-mono text-blue-200">Identifiant : {activeCard.card_identifier}</span>
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] text-blue-300 uppercase block">Validité</span>

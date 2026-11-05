@@ -180,7 +180,7 @@ export default function NewMemberPage() {
       if (createCardNow) {
         const rawToken = generateSecureToken(32);
         const tokenHash = hashToken(rawToken);
-        const cardIdentifier = generateCardIdentifier();
+        const cardIdentifier = generateCardIdentifier(codeToUse);
 
         const creationObj = new Date(`${creationDate}T${new Date().toTimeString().split(' ')[0]}`);
         const expirationObj = new Date(`${expirationDate}T23:59:59.999Z`);
@@ -286,61 +286,35 @@ export default function NewMemberPage() {
             </div>
           </div>
 
-          {/* Section 2 : Codes (Code Client obligatoire & Code de la Carte automatique) */}
+          {/* Section 2 : Code Client */}
           <div className="space-y-4 pt-3 border-t border-stone-200">
             <h2 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
               <KeyRound size={15} />
-              <span>2. Code Client &amp; Code de la Carte</span>
+              <span>2. Code Client</span>
             </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              {/* CHAMP 1 : CODE CLIENT (OBLIGATOIRE, SAISIE MANUELLE) */}
-              <div>
-                <label
-                  htmlFor="clientCode"
-                  className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2"
-                >
-                  Code Client *
-                </label>
-                <div className="relative">
-                  <User size={16} className="absolute left-3.5 top-3.5 text-stone-400" />
-                  <input
-                    id="clientCode"
-                    type="text"
-                    required
-                    placeholder="Ex: CL-9824 ou REF-0042"
-                    value={clientCode}
-                    onChange={(e) => setClientCode(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-mono transition-all"
-                  />
-                </div>
-                <p className="text-[11px] text-slate-500 mt-1.5">
-                  Référence interne ou numéro de dossier client à renseigner obligatoirement.
-                </p>
+            <div>
+              <label
+                htmlFor="clientCode"
+                className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2"
+              >
+                Code Client *
+              </label>
+              <div className="relative">
+                <User size={16} className="absolute left-3.5 top-3.5 text-stone-400" />
+                <input
+                  id="clientCode"
+                  type="text"
+                  required
+                  placeholder="Ex: CL-9824 ou RP861950"
+                  value={clientCode}
+                  onChange={(e) => setClientCode(e.target.value)}
+                  className="w-full pl-10 pr-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-mono transition-all"
+                />
               </div>
-
-              {/* CHAMP 2 : CODE DE LA CARTE (AUTOMATIQUEMENT REMPLI SELON LA LOGIQUE) */}
-              <div>
-                <label
-                  htmlFor="memberCode"
-                  className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2"
-                >
-                  Code de la Carte
-                </label>
-                <div className="relative">
-                  <Hash size={16} className="absolute left-3.5 top-3.5 text-blue-600" />
-                  <input
-                    id="memberCode"
-                    type="text"
-                    readOnly
-                    value={memberCode || `${new Date().getFullYear()}0001`}
-                    className="w-full pl-10 pr-4 py-3 text-sm bg-blue-50/50 border border-blue-200 rounded-xl text-blue-800 font-mono font-bold cursor-not-allowed select-none"
-                  />
-                </div>
-                <p className="text-[11px] text-slate-500 mt-1.5">
-                  Calculé automatiquement selon la logique : Année ({new Date().getFullYear()}) + numéro de séquence incrémenté.
-                </p>
-              </div>
+              <p className="text-[11px] text-slate-500 mt-1.5">
+                Référence interne ou numéro de dossier client à renseigner obligatoirement.
+              </p>
             </div>
           </div>
 

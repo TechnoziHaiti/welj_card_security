@@ -99,7 +99,9 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
       // 2. Création de la nouvelle
       const rawToken = generateSecureToken(32);
       const tokenHash = hashToken(rawToken);
-      const newCardIdentifier = generateCardIdentifier();
+      const existingCount = cards.filter((c) => c.member_id === oldCard.member_id).length;
+      const baseCode = oldCard.members?.member_code || oldCard.card_identifier.replace(/^WELJ-?/i, '').split('-')[0];
+      const newCardIdentifier = generateCardIdentifier(baseCode, existingCount > 0 ? `R${existingCount}` : undefined);
       const expiresAt = calculateExpirationDate(now);
 
       const { data: newCard, error: createError } = await supabase
@@ -269,7 +271,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                               {card.members.first_name} {card.members.last_name}
                             </span>
                             <span className="text-[11px] text-slate-500 font-mono">
-                              Code Carte {card.members.member_code} &bull; {card.members.account_type}
+                              Compte {card.members.account_type}
                             </span>
                           </Link>
                         ) : (

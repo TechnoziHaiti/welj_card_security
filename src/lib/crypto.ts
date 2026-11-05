@@ -17,12 +17,16 @@ export function hashToken(token: string): string {
 }
 
 /**
- * Génère un identifiant unique de carte au format d'entreprise WELJ-YYYY-XXXX.
+ * Génère un identifiant unique de carte au format d'entreprise WELJ-YYYYXXXX (ex: WELJ-20260001).
+ * Si un code est fourni (ex: 20260001), l'utilise avec le préfixe WELJ-.
  */
-export function generateCardIdentifier(): string {
+export function generateCardIdentifier(code?: string | number, suffix?: string): string {
   const year = new Date().getFullYear();
-  const randomSuffix = randomBytes(3).toString('hex').toUpperCase();
-  return `WELJ-${year}-${randomSuffix}`;
+  if (code) {
+    const clean = String(code).replace(/^WELJ-?/i, '');
+    return suffix ? `WELJ-${clean}-${suffix}` : `WELJ-${clean}`;
+  }
+  return `WELJ-${year}0001`;
 }
 
 /**

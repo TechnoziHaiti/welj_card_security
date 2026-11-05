@@ -23,10 +23,11 @@ test('1. Sécurité Cryptographique des Tokens QR', async (t) => {
   });
 
   await t.test('Format identifiant de carte d\'entreprise', () => {
-    const cardId = generateCardIdentifier();
+    const cardId = generateCardIdentifier('20260001');
     const currentYear = new Date().getFullYear().toString();
 
-    assert.match(cardId, new RegExp(`^WELJ-${currentYear}-[A-F0-9]{6}$`), 'Format WELJ-YYYY-XXXX valide');
+    assert.equal(cardId, `WELJ-20260001`);
+    assert.match(cardId, new RegExp(`^WELJ-${currentYear}\\d{4,}$`), 'Format WELJ-YYYYXXXX valide');
   });
 });
 

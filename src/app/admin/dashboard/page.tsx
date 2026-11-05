@@ -274,7 +274,7 @@ export default async function AdminDashboardPage() {
                       {card.members ? `${card.members.first_name} ${card.members.last_name}` : 'Titulaire inconnu'}
                     </p>
                     <p className="text-[11px] text-slate-500 font-mono mt-0.5">
-                      {card.card_identifier} &bull; Code Carte {card.members?.member_code}
+                      {card.card_identifier} &bull; Compte {card.members?.account_type || 'Standard'}
                     </p>
                   </div>
                   <div className="flex items-center gap-2.5 shrink-0">

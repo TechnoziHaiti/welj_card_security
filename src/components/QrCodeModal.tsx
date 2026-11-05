@@ -61,7 +61,7 @@ export function QrCodeModal({ isOpen, onClose, card, member, rawToken }: QrCodeM
                 Carte créée avec succès !
               </h3>
               <p className="text-xs text-slate-600 font-mono mt-0.5">
-                {member ? `${member.first_name} ${member.last_name}` : 'Nouveau titulaire'} &bull; Code Carte : <strong className="text-blue-600">{member?.member_code || card.card_identifier}</strong>
+                {member ? `${member.first_name} ${member.last_name}` : 'Nouveau titulaire'} &bull; Identifiant : <strong className="text-blue-600">{card.card_identifier}</strong>
               </p>
             </div>
           </div>
