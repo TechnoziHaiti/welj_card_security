@@ -135,13 +135,13 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
           <button
             onClick={handleClearAll}
             disabled={clearingAll || deletingId !== null}
-            className="self-start sm:self-auto inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold text-rose-700 hover:text-rose-800 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm cursor-pointer"
             title="Supprimer tous les scans enregistrés"
           >
             {clearingAll ? (
-              <Loader2 size={14} className="animate-spin text-rose-600" />
+              <Loader2 size={15} className="animate-spin text-white" />
             ) : (
-              <Trash2 size={14} className="text-rose-600" />
+              <Trash2 size={15} className="text-white" />
             )}
             <span>Vider l&apos;historique</span>
           </button>
@@ -287,15 +287,15 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
                         <button
                           onClick={() => handleDeleteLog(log.id)}
                           disabled={deletingId === log.id || clearingAll}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 text-[11px] font-semibold transition-all disabled:opacity-50 cursor-pointer"
+                          className="inline-flex items-center justify-center p-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-sm disabled:opacity-50 cursor-pointer"
                           title="Supprimer cet enregistrement"
+                          aria-label="Supprimer cet enregistrement"
                         >
                           {deletingId === log.id ? (
-                            <Loader2 size={13} className="animate-spin text-rose-600" />
+                            <Loader2 size={15} className="animate-spin text-white" />
                           ) : (
-                            <Trash2 size={13} className="text-rose-600" />
+                            <Trash2 size={15} className="text-white" />
                           )}
-                          <span>Supprimer</span>
                         </button>
                       </td>
                     )}
