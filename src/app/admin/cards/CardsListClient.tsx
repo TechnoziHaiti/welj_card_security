@@ -10,6 +10,7 @@ import {
   QrCode,
   RefreshCw,
   ShieldAlert,
+  Trash2,
   User,
   Calendar,
   AlertCircle,
@@ -73,6 +74,39 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
       router.refresh();
     } catch (err: any) {
       setAlert({ text: err?.message || 'Erreur.', type: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Suppression définitive d'une carte révoquée
+  const handleDeleteCard = async (card: Card) => {
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm(
+          `CONFIRMATION WEB - SUPPRESSION DÉFINITIVE\n\n` +
+          `Voulez-vous vraiment supprimer définitivement la carte révoquée ${card.card_identifier} ?\n\n` +
+          `Cette action supprimera définitivement cet enregistrement de la base de données.`
+        )
+      : true;
+
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    setAlert(null);
+
+    try {
+      const { error } = await supabase
+        .from('cards')
+        .delete()
+        .eq('id', card.id);
+
+      if (error) throw new Error(error.message || 'Erreur lors de la suppression.');
+
+      setCards(cards.filter((c) => c.id !== card.id));
+      setAlert({ text: `Carte révoquée ${card.card_identifier} supprimée définitivement.`, type: 'success' });
+      router.refresh();
+    } catch (err: any) {
+      setAlert({ text: err?.message || 'Erreur lors de la suppression.', type: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -353,6 +387,16 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                               >
                                 <RefreshCw size={12} />
                                 <span>Renouveler</span>
+                              </button>
+                            )}
+                            {card.status === 'revoquee' && (
+                              <button
+                                onClick={() => handleDeleteCard(card)}
+                                disabled={actionLoading}
+                                className="px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border border-red-600 text-[11px] font-bold transition-colors shadow-sm cursor-pointer"
+                                title="Supprimer définitivement la carte révoquée"
+                              >
+                                <Trash2 size={13} />
                               </button>
                             )}
                           </div>

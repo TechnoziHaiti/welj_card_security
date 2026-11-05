@@ -10,6 +10,7 @@ import {
   QrCode,
   ShieldAlert,
   RefreshCw,
+  Trash2,
   CheckCircle2,
   Clock,
   Edit2,
@@ -273,6 +274,39 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
       router.refresh();
     } catch (err: any) {
       setMessage({ text: err?.message || 'Erreur lors de la révocation.', type: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Suppression définitive d'une carte révoquée
+  const handleDeleteCard = async (cardToDelete: Card) => {
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm(
+          `CONFIRMATION WEB - SUPPRESSION DÉFINITIVE\n\n` +
+          `Voulez-vous vraiment supprimer définitivement la carte révoquée ${cardToDelete.card_identifier} ?\n\n` +
+          `Cette action supprimera définitivement cet enregistrement de la base de données.`
+        )
+      : true;
+
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    setMessage(null);
+
+    try {
+      const { error } = await supabase
+        .from('cards')
+        .delete()
+        .eq('id', cardToDelete.id);
+
+      if (error) throw new Error(error.message || 'Erreur lors de la suppression.');
+
+      setCards(cards.filter((c) => c.id !== cardToDelete.id));
+      setMessage({ text: `Carte révoquée ${cardToDelete.card_identifier} supprimée définitivement.`, type: 'success' });
+      router.refresh();
+    } catch (err: any) {
+      setMessage({ text: err?.message || 'Erreur lors de la suppression.', type: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -611,6 +645,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                       <th className="py-2.5 px-3">Date d&apos;Émission</th>
                       <th className="py-2.5 px-3">Date d&apos;Expiration</th>
                       <th className="py-2.5 px-3">Révocation / Remplacement</th>
+                      {isAdmin && <th className="py-2.5 px-3 text-right">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-200 text-slate-800">
@@ -632,6 +667,20 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                           {card.revoked_at ? `Révoquée le ${formatDateFr(card.revoked_at)}` : '-'}
                           {card.renewed_from_card_id && ' (Renouvellement)'}
                         </td>
+                        {isAdmin && (
+                          <td className="py-2.5 px-3 text-right">
+                            {card.status === 'revoquee' && (
+                              <button
+                                onClick={() => handleDeleteCard(card)}
+                                disabled={actionLoading}
+                                className="p-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border border-red-600 font-bold transition-colors shadow-sm cursor-pointer"
+                                title="Supprimer définitivement la carte révoquée"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))}
                   </tbody>
