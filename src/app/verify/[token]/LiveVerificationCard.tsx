@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Image from 'next/image';
 import {
   ShieldCheck,
@@ -9,42 +9,15 @@ import {
   Award,
   Calendar,
   CreditCard,
-  Radio,
 } from 'lucide-react';
 import { formatDateFr } from '@/lib/dates';
 import { VerificationResponse } from '@/types/database';
 
 interface Props {
   verification: VerificationResponse;
-  initialDynamicCode?: string;
-  initialValidUntil?: string;
-  initialRemainingSeconds?: number;
 }
 
 export function LiveVerificationCard({ verification }: Props) {
-  const [currentTime, setCurrentTime] = useState<string>('');
-
-  useEffect(() => {
-    // Horloge temps réel animée (défile chaque seconde pour prouver qu'il ne s'agit pas d'une capture d'écran)
-    const updateTime = () => {
-      const now = new Date();
-      setCurrentTime(
-        now.toLocaleTimeString('fr-FR', {
-          hour: '2-digit',
-          minute: '2-digit',
-          second: '2-digit',
-        })
-      );
-    };
-
-    updateTime();
-    const clockInterval = setInterval(updateTime, 1000);
-
-    return () => {
-      clearInterval(clockInterval);
-    };
-  }, []);
-
   return (
     <div className="relative group w-full">
       {/* Effet lumineux néon en dessous */}
@@ -64,7 +37,7 @@ export function LiveVerificationCard({ verification }: Props) {
           />
         </div>
 
-        {/* CORPS : FULL BLACK ÉPURÉ (STYLE MINIMALISTE ET LISIBLE) */}
+        {/* CORPS : FULL BLACK ÉPURÉ STYLE PHOTO 2 */}
         <div className="p-6 sm:p-8 space-y-6">
           {/* Badge statut circulaire centré */}
           <div className="text-center space-y-2">
@@ -81,7 +54,7 @@ export function LiveVerificationCard({ verification }: Props) {
             </p>
           </div>
 
-          {/* Liste des informations clés (lignes épurées avec séparateurs discrets) */}
+          {/* Liste des informations clés (lignes épurées et fixes) */}
           <div className="divide-y divide-stone-800/80 border-y border-stone-800/80 text-xs font-sans">
             {/* Titulaire */}
             <div className="py-3.5 flex items-center justify-between gap-3">
@@ -135,18 +108,6 @@ export function LiveVerificationCard({ verification }: Props) {
               </span>
               <span className="font-bold text-white text-xs">
                 {formatDateFr(verification.expires_at)}
-              </span>
-            </div>
-
-            {/* Contrôle Temps Réel (preuve de vie anti-capture d'écran) */}
-            <div className="py-3.5 flex items-center justify-between gap-3">
-              <span className="text-stone-400 uppercase tracking-wider font-semibold flex items-center gap-2 shrink-0">
-                <Radio size={14} className="text-emerald-400 animate-pulse" />
-                <span>Contrôle Direct</span>
-              </span>
-              <span className="font-mono font-bold text-emerald-400 text-xs flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block" />
-                {currentTime || 'Synchronisation...'}
               </span>
             </div>
           </div>

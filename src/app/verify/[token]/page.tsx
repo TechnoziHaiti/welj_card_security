@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { createClient as createAnonClient } from '@/lib/supabase/server';
-import { hashToken, hashIpAddress, generateDynamicSecurityCode } from '@/lib/crypto';
+import { hashToken, hashIpAddress } from '@/lib/crypto';
 import { formatDateFr } from '@/lib/dates';
 import { VerificationResponse } from '@/types/database';
 import { LiveVerificationCard } from './LiveVerificationCard';
@@ -105,7 +105,6 @@ export default async function VerifyTokenPage({ params }: PageProps) {
   }
 
   const { result } = verification;
-  const dynamicSecurity = generateDynamicSecurityCode(tokenHash, 30);
 
   return (
     <main className="min-h-screen bg-black flex flex-col items-center justify-center p-4 sm:p-6 text-white font-sans relative overflow-hidden">
@@ -116,9 +115,6 @@ export default async function VerifyTokenPage({ params }: PageProps) {
         {result === 'valide' && (
           <LiveVerificationCard
             verification={verification}
-            initialDynamicCode={dynamicSecurity.code}
-            initialValidUntil={dynamicSecurity.validUntil}
-            initialRemainingSeconds={dynamicSecurity.remainingSeconds}
           />
         )}
 
