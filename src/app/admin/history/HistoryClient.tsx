@@ -135,7 +135,7 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
           <button
             onClick={handleClearAll}
             disabled={clearingAll || deletingId !== null}
-            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm cursor-pointer"
+            className="self-start sm:self-auto inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold text-white bg-red-600 hover:bg-red-700 active:bg-red-800 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm cursor-pointer"
             title="Supprimer tous les scans enregistrés"
           >
             {clearingAll ? (
@@ -287,7 +287,7 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
                         <button
                           onClick={() => handleDeleteLog(log.id)}
                           disabled={deletingId === log.id || clearingAll}
-                          className="inline-flex items-center justify-center p-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+                          className="inline-flex items-center justify-center p-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white transition-all shadow-sm disabled:opacity-50 cursor-pointer"
                           title="Supprimer cet enregistrement"
                           aria-label="Supprimer cet enregistrement"
                         >

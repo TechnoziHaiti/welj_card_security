@@ -327,7 +327,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                                 <button
                                   onClick={() => handleRevoke(card)}
                                   disabled={actionLoading}
-                                  className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white border border-rose-600 text-[11px] font-semibold transition-colors shadow-sm"
+                                  className="px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border border-red-600 text-[11px] font-bold transition-colors shadow-sm cursor-pointer"
                                   title="Révoquer"
                                 >
                                   <ShieldAlert size={13} />
