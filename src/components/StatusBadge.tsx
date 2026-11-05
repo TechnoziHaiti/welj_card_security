@@ -26,7 +26,7 @@ export function StatusBadge({ status, size = 'md', showIcon = true }: StatusBadg
   // Actif / Valide / Active
   if (normalized === 'active' || normalized === 'actif' || normalized === 'valide') {
     return (
-      <span className={`inline-flex items-center rounded-full bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-600/25 ${sizeClasses[size]}`}>
+      <span className={`inline-flex items-center rounded-full bg-transparent text-emerald-700 ring-1 ring-inset ring-emerald-600/30 ${sizeClasses[size]}`}>
         {showIcon && <CheckCircle2 size={iconSizes[size]} className="text-emerald-600" />}
         {normalized === 'valide' ? 'Authentique' : normalized === 'active' ? 'Active' : 'Actif'}
       </span>
@@ -36,7 +36,7 @@ export function StatusBadge({ status, size = 'md', showIcon = true }: StatusBadg
   // Expirée
   if (normalized === 'expiree' || normalized === 'expirée') {
     return (
-      <span className={`inline-flex items-center rounded-full bg-amber-50 text-amber-800 ring-1 ring-inset ring-amber-600/25 ${sizeClasses[size]}`}>
+      <span className={`inline-flex items-center rounded-full bg-transparent text-amber-800 ring-1 ring-inset ring-amber-600/30 ${sizeClasses[size]}`}>
         {showIcon && <Clock size={iconSizes[size]} className="text-amber-600" />}
         Expirée
       </span>
@@ -46,7 +46,7 @@ export function StatusBadge({ status, size = 'md', showIcon = true }: StatusBadg
   // Révoquée / Suspendu
   if (normalized === 'revoquee' || normalized === 'révoquée' || normalized === 'suspendu') {
     return (
-      <span className={`inline-flex items-center rounded-full bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/25 ${sizeClasses[size]}`}>
+      <span className={`inline-flex items-center rounded-full bg-transparent text-rose-700 ring-1 ring-inset ring-rose-600/30 ${sizeClasses[size]}`}>
         {showIcon && <ShieldAlert size={iconSizes[size]} className="text-rose-600" />}
         {normalized === 'suspendu' ? 'Suspendu' : 'Révoquée'}
       </span>
@@ -56,7 +56,7 @@ export function StatusBadge({ status, size = 'md', showIcon = true }: StatusBadg
   // Inconnue / Invalide
   if (normalized === 'inconnue' || normalized === 'invalide') {
     return (
-      <span className={`inline-flex items-center rounded-full bg-rose-50 text-rose-700 ring-1 ring-inset ring-rose-600/25 ${sizeClasses[size]}`}>
+      <span className={`inline-flex items-center rounded-full bg-transparent text-rose-700 ring-1 ring-inset ring-rose-600/30 ${sizeClasses[size]}`}>
         {showIcon && <XCircle size={iconSizes[size]} className="text-rose-600" />}
         Non reconnue
       </span>
@@ -66,7 +66,7 @@ export function StatusBadge({ status, size = 'md', showIcon = true }: StatusBadg
   // En attente / Inactif
   if (normalized === 'en_attente' || normalized === 'inactif') {
     return (
-      <span className={`inline-flex items-center rounded-full bg-stone-100 text-stone-700 ring-1 ring-inset ring-stone-300 ${sizeClasses[size]}`}>
+      <span className={`inline-flex items-center rounded-full bg-transparent text-stone-700 ring-1 ring-inset ring-stone-300 ${sizeClasses[size]}`}>
         {showIcon && <AlertTriangle size={iconSizes[size]} className="text-stone-500" />}
         {normalized === 'en_attente' ? 'En attente' : 'Inactif'}
       </span>
@@ -74,7 +74,7 @@ export function StatusBadge({ status, size = 'md', showIcon = true }: StatusBadg
   }
 
   return (
-    <span className={`inline-flex items-center rounded-full bg-stone-100 text-stone-700 ring-1 ring-inset ring-stone-300 ${sizeClasses[size]}`}>
+    <span className={`inline-flex items-center rounded-full bg-transparent text-stone-700 ring-1 ring-inset ring-stone-300 ${sizeClasses[size]}`}>
       {status}
     </span>
   );
