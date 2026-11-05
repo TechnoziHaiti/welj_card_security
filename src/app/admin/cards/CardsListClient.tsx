@@ -302,7 +302,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                             setRawModalToken(null);
                             setShowQrModal(true);
                           }}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-[11px] border border-blue-200 transition-colors shadow-sm"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-transparent hover:bg-stone-100 text-blue-600 font-semibold text-[11px] border border-blue-300 transition-colors shadow-sm"
                           title="Télécharger QR Code"
                         >
                           <QrCode size={13} />
@@ -325,7 +325,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                                 <button
                                   onClick={() => handleRevoke(card)}
                                   disabled={actionLoading}
-                                  className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-[11px] font-semibold transition-colors"
+                                  className="px-2.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white border border-rose-600 text-[11px] font-semibold transition-colors shadow-sm"
                                   title="Révoquer"
                                 >
                                   <ShieldAlert size={13} />

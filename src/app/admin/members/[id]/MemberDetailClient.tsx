@@ -562,7 +562,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                       <button
                         onClick={() => handleRevokeCard(activeCard)}
                         disabled={actionLoading}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-950/60 hover:bg-rose-900 text-rose-200 font-semibold text-xs transition-colors border border-rose-800/50"
+                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors shadow-sm"
                       >
                         <ShieldAlert size={14} />
                         <span>Révoquer</span>
