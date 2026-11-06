@@ -98,40 +98,63 @@ export default function NewMemberPage() {
 
       const enteredClientCode = clientCode.trim();
 
-      // 1. Enregistrement du membre avec son Code Client unique saisi
-      // Tentative d'insertion avec member_code et client_code.
-      // Si la colonne client_code n'a pas encore été créée dans Supabase (schema cache),
-      // nous basculons automatiquement sur member_code uniquement pour garantir le succès de l'enregistrement.
-      let insertPayload: Record<string, any> = {
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        account_type: accountType,
-        member_code: enteredClientCode,
-        client_code: enteredClientCode,
-        status: 'actif',
-      };
+      // 1. Enregistrement adaptatif et résilient du membre avec son Code Client saisi
+      // Supporte tous les états du schéma Supabase (présence de client_code, member_code, ou des deux).
+      let memberData: any = null;
+      let memberError: any = null;
 
-      let { data: memberData, error: memberError } = await supabase
+      const firstAttempt = await supabase
         .from('members')
-        .insert(insertPayload)
+        .insert({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          account_type: accountType,
+          member_code: enteredClientCode,
+          client_code: enteredClientCode,
+          status: 'actif',
+        })
         .select()
         .single();
 
-      // Fallback si la colonne client_code n'est pas trouvée dans le cache du schéma Supabase
-      if (
-        memberError &&
-        (memberError.message?.includes('client_code') ||
-          memberError.details?.includes('client_code') ||
-          memberError.code === 'PGRST204')
-      ) {
-        delete insertPayload.client_code;
-        const retry = await supabase
-          .from('members')
-          .insert(insertPayload)
-          .select()
-          .single();
-        memberData = retry.data;
-        memberError = retry.error;
+      if (!firstAttempt.error && firstAttempt.data) {
+        memberData = firstAttempt.data;
+      } else {
+        const errorText = `${firstAttempt.error?.message || ''} ${firstAttempt.error?.details || ''}`;
+
+        // Si la colonne 'member_code' n'est pas dans le schéma Supabase
+        if (errorText.includes('member_code')) {
+          const retryClientOnly = await supabase
+            .from('members')
+            .insert({
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              account_type: accountType,
+              client_code: enteredClientCode,
+              status: 'actif',
+            })
+            .select()
+            .single();
+          memberData = retryClientOnly.data;
+          memberError = retryClientOnly.error;
+        }
+        // Si la colonne 'client_code' n'est pas dans le schéma Supabase
+        else if (errorText.includes('client_code') || firstAttempt.error?.code === 'PGRST204') {
+          const retryMemberOnly = await supabase
+            .from('members')
+            .insert({
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              account_type: accountType,
+              member_code: enteredClientCode,
+              status: 'actif',
+            })
+            .select()
+            .single();
+          memberData = retryMemberOnly.data;
+          memberError = retryMemberOnly.error;
+        } else {
+          memberError = firstAttempt.error;
+        }
       }
 
       if (memberError || !memberData) {

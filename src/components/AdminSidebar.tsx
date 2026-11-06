@@ -74,9 +74,9 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
   ];
 
   return (
-    <aside className="w-64 h-full bg-slate-950 text-white flex flex-col shrink-0 border-r border-slate-800/80 shadow-2xl select-none">
+    <aside className="w-64 h-full bg-black text-white flex flex-col shrink-0 border-r border-neutral-900 shadow-2xl select-none">
       {/* Brand Header */}
-      <div className="p-5 border-b border-slate-800/80 shrink-0">
+      <div className="p-5 border-b border-neutral-900 shrink-0">
         <Link href="/admin/dashboard" className="block group">
           <span className="text-sm font-black tracking-wider text-white uppercase block leading-snug group-hover:text-blue-400 transition-colors">
             WELJ EXPRESS SERVICES
@@ -110,7 +110,7 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
       </nav>
 
       {/* User info & Logout fixé en bas */}
-      <div className="p-4 border-t border-slate-800/80 bg-black/60 shrink-0">
+      <div className="p-4 border-t border-neutral-900 bg-black shrink-0">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
@@ -135,7 +135,7 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
 
         <button
           onClick={handleSignOut}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-300 bg-slate-900 hover:bg-slate-800 hover:text-white rounded-xl transition-colors border border-slate-800 cursor-pointer"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-300 bg-neutral-950 hover:bg-neutral-900 hover:text-white rounded-xl transition-colors border border-neutral-800 cursor-pointer"
         >
           <LogOut size={14} />
           <span>Déconnexion</span>

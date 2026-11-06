@@ -69,36 +69,61 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
 
     try {
       const editCode = editClientCode.trim();
-      let updatePayload: Record<string, any> = {
-        first_name: editFirstName.trim(),
-        last_name: editLastName.trim(),
-        member_code: editCode,
-        client_code: editCode,
-        account_type: editAccountType,
-      };
+      let data: any = null;
+      let error: any = null;
 
-      let { data, error } = await supabase
+      const firstAttempt = await supabase
         .from('members')
-        .update(updatePayload)
+        .update({
+          first_name: editFirstName.trim(),
+          last_name: editLastName.trim(),
+          member_code: editCode,
+          client_code: editCode,
+          account_type: editAccountType,
+        })
         .eq('id', member.id)
         .select()
         .single();
 
-      if (
-        error &&
-        (error.message?.includes('client_code') ||
-          error.details?.includes('client_code') ||
-          error.code === 'PGRST204')
-      ) {
-        delete updatePayload.client_code;
-        const retry = await supabase
-          .from('members')
-          .update(updatePayload)
-          .eq('id', member.id)
-          .select()
-          .single();
-        data = retry.data;
-        error = retry.error;
+      if (!firstAttempt.error && firstAttempt.data) {
+        data = firstAttempt.data;
+      } else {
+        const errorText = `${firstAttempt.error?.message || ''} ${firstAttempt.error?.details || ''}`;
+
+        // Si la colonne 'member_code' n'est pas dans le schéma Supabase
+        if (errorText.includes('member_code')) {
+          const retryClientOnly = await supabase
+            .from('members')
+            .update({
+              first_name: editFirstName.trim(),
+              last_name: editLastName.trim(),
+              client_code: editCode,
+              account_type: editAccountType,
+            })
+            .eq('id', member.id)
+            .select()
+            .single();
+          data = retryClientOnly.data;
+          error = retryClientOnly.error;
+        }
+        // Si la colonne 'client_code' n'est pas dans le schéma Supabase
+        else if (errorText.includes('client_code') || firstAttempt.error?.code === 'PGRST204') {
+          const retryMemberOnly = await supabase
+            .from('members')
+            .update({
+              first_name: editFirstName.trim(),
+              last_name: editLastName.trim(),
+              member_code: editCode,
+              account_type: editAccountType,
+            })
+            .eq('id', member.id)
+            .select()
+            .single();
+          data = retryMemberOnly.data;
+          error = retryMemberOnly.error;
+        } else {
+          error = firstAttempt.error;
+        }
       }
 
       if (error || !data) {

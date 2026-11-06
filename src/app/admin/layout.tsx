@@ -14,8 +14,8 @@ export default async function AdminLayout({
   const userRole = role; // Strictement 'admin' ou 'agent'
 
   return (
-    <div className="h-screen w-full bg-slate-950 flex overflow-hidden">
-      {/* Sidebar noire / slate-950 */}
+    <div className="h-screen w-full bg-black flex overflow-hidden">
+      {/* Sidebar noire pure */}
       <AdminSidebar
         userEmail={userEmail}
         userName={userName}

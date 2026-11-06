@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
-const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes d'inactivité
+const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 1 heure d'inactivité (60 minutes)
 
 // Réhausseur dynamique de contraste (histogram stretching) et filtre anti-flou (unsharp mask 3x3)
 function enhanceLuminanceAndSharpen(
@@ -130,12 +130,12 @@ export default function PublicVerifyPage() {
     applyZoomToVideo(next);
   };
 
-  // Rafraîchir l'horodatage d'activité utilisateur (30 minutes)
+  // Rafraîchir l'horodatage d'activité utilisateur (1 heure)
   const refreshActivity = useCallback(() => {
     const now = Date.now();
     lastActivityRef.current = now;
     if (typeof document !== 'undefined') {
-      document.cookie = `welj_last_activity=${now}; path=/; max-age=1800; SameSite=Lax`;
+      document.cookie = `welj_last_activity=${now}; path=/; max-age=3600; SameSite=Lax`;
     }
   }, []);
 
@@ -340,7 +340,7 @@ export default function PublicVerifyPage() {
     checkAuth();
   }, [router, refreshActivity]);
 
-  // 2. Gestion de l'inactivité de 30 minutes
+  // 2. Gestion de l'inactivité de 1 heure
   useEffect(() => {
     if (authChecking || !currentUser) return;
 
@@ -760,8 +760,8 @@ export default function PublicVerifyPage() {
           </p>
         </div>
 
-        {/* Conteneur Scanner Principal en verre sombre bleu nuit */}
-        <div className="bg-[#0b1329]/90 backdrop-blur-xl text-white rounded-3xl shadow-2xl p-5 sm:p-6 border border-slate-800/80 space-y-4">
+        {/* Conteneur Scanner Principal épuré sans grand encadrement */}
+        <div className="space-y-4">
           <div>
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-xs text-slate-300 font-medium">Viseur Caméra en Direct</span>
@@ -909,7 +909,7 @@ export default function PublicVerifyPage() {
                 disabled={!manualInput.trim() || processingScan}
                 className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"
               >
-                Tester
+                Vérifier
               </button>
             </form>
           </div>
@@ -935,7 +935,7 @@ export default function PublicVerifyPage() {
               </Link>
             ) : (
               <span className="text-[11px] text-slate-400 font-medium">
-                Session active &bull; Déconnexion auto (30m)
+                Session active &bull; Déconnexion auto (1h)
               </span>
             )}
 

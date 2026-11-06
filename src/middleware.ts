@@ -49,7 +49,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const isProtected = isAccessingAdmin || isAccessingVerify;
-  const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes d'inactivité
+  const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 1 heure d'inactivité
   const now = Date.now();
 
   // Protection des routes d'administration et du scanner de vérification
@@ -60,7 +60,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(redirectUrl);
     }
 
-    // Vérification de l'inactivité (30 minutes)
+    // Vérification de l'inactivité (1 heure)
     const lastActivityCookie = request.cookies.get('welj_last_activity')?.value;
     if (lastActivityCookie) {
       const lastActivity = parseInt(lastActivityCookie, 10);
@@ -85,7 +85,7 @@ export async function middleware(request: NextRequest) {
       path: '/',
       httpOnly: false,
       sameSite: 'lax',
-      maxAge: 30 * 60,
+      maxAge: 60 * 60,
     });
 
     const role = user.app_metadata?.role || user.user_metadata?.role || 'agent';
