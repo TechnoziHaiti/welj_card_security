@@ -49,12 +49,12 @@ export function AdminSidebar({ userEmail, userName, userRole, onNavigate }: Admi
       icon: QrCode,
     },
     {
-      label: isAdmin ? 'Membres' : 'Membres (Lecture)',
+      label: 'Membres',
       href: '/admin/members',
       icon: Users,
     },
     {
-      label: isAdmin ? 'Cartes Welj' : 'Cartes Welj (Lecture)',
+      label: 'Cartes Welj',
       href: '/admin/cards',
       icon: CreditCard,
     },
@@ -128,7 +128,7 @@ export function AdminSidebar({ userEmail, userName, userRole, onNavigate }: Admi
                 {isAdmin ? (
                   <span className="text-emerald-400 font-medium">Administrateur</span>
                 ) : (
-                  <span className="text-slate-300 font-medium">Agent de Contrôle (Lecture)</span>
+                  <span className="text-slate-300 font-medium">Agent de Contrôle</span>
                 )}
               </p>
             </div>

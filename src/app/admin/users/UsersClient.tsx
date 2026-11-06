@@ -122,7 +122,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
       }
 
       setUsers(users.map((u) => (u.id === targetUser.id ? { ...u, role: newRole } : u)));
-      setSuccessMsg(`Rôle mis à jour pour ${targetUser.email} : ${newRole === 'admin' ? 'Administrateur' : 'Agent de Contrôle (Lecture)'}.`);
+      setSuccessMsg(`Rôle mis à jour pour ${targetUser.email} : ${newRole === 'admin' ? 'Administrateur' : 'Agent de Contrôle'}.`);
     } catch (err: any) {
       setError(err.message || 'Erreur lors du changement de rôle.');
     } finally {
@@ -302,7 +302,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                                   : 'border-stone-300 text-slate-700'
                               }`}
                             >
-                              <option value="agent">Agent de Contrôle (Lecture)</option>
+                              <option value="agent">Agent de Contrôle</option>
                               <option value="admin">Administrateur (Tous droits)</option>
                             </select>
                             {updatingRoleId === user.id && (
