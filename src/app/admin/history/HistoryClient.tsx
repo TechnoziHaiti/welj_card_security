@@ -103,7 +103,7 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
       const memberName = log.cards?.members
         ? `${log.cards.members.first_name} ${log.cards.members.last_name}`.toLowerCase()
         : '';
-      const memberCode = log.cards?.members?.member_code?.toLowerCase() || '';
+      const memberCode = (log.cards?.members?.client_code || log.cards?.members?.member_code || '').toLowerCase();
       const hashLookup = log.token_hash_lookup?.toLowerCase() || '';
 
       return (
@@ -154,7 +154,7 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
           className={`p-3.5 rounded-xl border flex items-center gap-2.5 text-xs font-medium animate-fadeIn ${
             feedback.type === 'success'
               ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-              : 'bg-rose-50 border-rose-200 text-rose-800'
+              : 'bg-transparent border-rose-400 text-rose-700'
           }`}
         >
           {feedback.type === 'success' ? (
@@ -265,7 +265,7 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
                             {log.cards.members.first_name} {log.cards.members.last_name}
                           </span>
                           <span className="text-[10px] text-slate-500 font-mono">
-                            {log.cards.members.member_code}
+                            {log.cards.members.client_code || log.cards.members.member_code}
                           </span>
                         </Link>
                       ) : (

@@ -2,9 +2,9 @@ import QRCode from 'qrcode';
 
 export function getVerificationUrl(rawToken: string): string {
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes('localhost')
-      ? process.env.NEXT_PUBLIC_APP_URL
-      : 'https://weljcard.vercel.app';
+    typeof window !== 'undefined' && window.location.origin
+      ? window.location.origin
+      : process.env.NEXT_PUBLIC_APP_URL || 'https://weljcard.vercel.app';
   return `${baseUrl.replace(/\/$/, '')}/verify/${encodeURIComponent(rawToken.trim())}`;
 }
 

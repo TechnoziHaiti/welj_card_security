@@ -34,6 +34,22 @@ export function isCardExpired(expiresAt: string | Date): boolean {
   return new Date() > exp;
 }
 
+/**
+ * Calcule dynamiquement le statut officiel effectif d'une carte :
+ * - Si le statut est "revoquee", la révocation est permanente.
+ * - Si la date d'expiration est dépassée (now > expires_at), la carte est "expiree".
+ * - Sinon la carte est "active".
+ */
+export function getEffectiveCardStatus(card: {
+  status?: string | null;
+  expires_at: string | Date;
+}): 'active' | 'expiree' | 'revoquee' | 'en_attente' {
+  if (card.status === 'revoquee') return 'revoquee';
+  if (card.status === 'en_attente') return 'en_attente';
+  if (isCardExpired(card.expires_at) || card.status === 'expiree') return 'expiree';
+  return 'active';
+}
+
 export function isExpiringSoon(expiresAt: string | Date, daysThreshold: number = 30): boolean {
   const exp = new Date(expiresAt);
   const now = new Date();
@@ -52,6 +68,18 @@ export function formatDateFr(dateStr?: string | Date | null): string {
     month: 'long',
     year: 'numeric',
   }).format(d);
+}
+
+/**
+ * Formatage court standardisé DD/MM/YYYY (ex: 03/11/2026) pour la maquette officielle de carte Welj
+ */
+export function formatDateShortFr(dateStr?: string | Date | null): string {
+  if (!dateStr) return '-';
+  const d = new Date(dateStr);
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 export function formatDateTimeFr(dateStr?: string | Date | null): string {

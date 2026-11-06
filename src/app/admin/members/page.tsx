@@ -61,14 +61,15 @@ export default async function MembersListPage({ searchParams }: PageProps) {
     console.error('Erreur chargement membres:', err);
   }
 
-  // Filtrage local pour la recherche plein texte (nom, prénom, code)
+  // Filtrage local pour la recherche plein texte (nom, prénom, code client)
   if (q && q.trim()) {
     const term = q.trim().toLowerCase();
     members = members.filter(
       (m) =>
         m.first_name.toLowerCase().includes(term) ||
         m.last_name.toLowerCase().includes(term) ||
-        m.member_code.toLowerCase().includes(term)
+        (m.client_code && m.client_code.toLowerCase().includes(term)) ||
+        (m.member_code && m.member_code.toLowerCase().includes(term))
     );
   }
 
@@ -109,7 +110,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
               type="text"
               name="q"
               defaultValue={q || ''}
-              placeholder="Rechercher par nom, prénom ou code membre (ex: 20260001)..."
+              placeholder="Rechercher par nom, prénom ou code client..."
               className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
             />
           </div>
@@ -188,10 +189,9 @@ export default async function MembersListPage({ searchParams }: PageProps) {
             <table className="w-full text-left border-collapse text-xs">
               <thead>
                 <tr className="bg-stone-100 text-stone-600 border-b border-stone-200 font-semibold uppercase tracking-wider text-[10px]">
-                  <th className="py-3.5 px-4">Code Membre</th>
+                  <th className="py-3.5 px-4">Code Client</th>
                   <th className="py-3.5 px-4">Nom et Prénom</th>
                   <th className="py-3.5 px-4">Type de Compte</th>
-                  <th className="py-3.5 px-4">Statut Membre</th>
                   <th className="py-3.5 px-4">Carte Associée</th>
                   <th className="py-3.5 px-4">Date d&apos;Adhésion</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
@@ -208,7 +208,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
                       className="hover:bg-stone-50 transition-colors group"
                     >
                       <td className="py-3 px-4 font-mono font-bold text-blue-600">
-                        {member.member_code}
+                        {member.client_code || member.member_code}
                       </td>
                       <td className="py-3 px-4">
                         <span className="font-bold text-slate-900 block">
@@ -219,9 +219,6 @@ export default async function MembersListPage({ searchParams }: PageProps) {
                         <span className="inline-block px-2 py-0.5 rounded-md bg-stone-100 text-slate-700 font-medium text-[11px] border border-stone-200">
                           {member.account_type}
                         </span>
-                      </td>
-                      <td className="py-3 px-4">
-                        <StatusBadge status={member.status} size="sm" />
                       </td>
                       <td className="py-3 px-4">
                         {activeCard ? (

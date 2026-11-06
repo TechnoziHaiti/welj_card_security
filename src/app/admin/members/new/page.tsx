@@ -30,7 +30,6 @@ export default function NewMemberPage() {
   const [lastName, setLastName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [clientCode, setClientCode] = useState('');
-  const [memberCode, setMemberCode] = useState('');
   const [accountType, setAccountType] = useState<AccountType>('Platinum');
 
   // 2. Dates de la carte (Création & Expiration)
@@ -69,46 +68,6 @@ export default function NewMemberPage() {
     verifyAdminAccess();
   }, [router, supabase]);
 
-  // Calcul automatique du Code Membre selon la règle officielle (Année + Séquence continue)
-  useEffect(() => {
-    const fetchNextMemberCode = async () => {
-      try {
-        const currentYear = new Date().getFullYear();
-        const { data } = await supabase
-          .from('members')
-          .select('member_code')
-          .order('created_at', { ascending: false })
-          .limit(20);
-
-        if (data && data.length > 0) {
-          const yearCodes = data
-            .map((m) => m.member_code)
-            .filter((c) => c && c.startsWith(String(currentYear)));
-
-          if (yearCodes.length > 0) {
-            const maxSeq = Math.max(
-              ...yearCodes.map((c) => {
-                const seqPart = c.slice(4);
-                const num = parseInt(seqPart, 10);
-                return isNaN(num) ? 0 : num;
-              })
-            );
-            const nextSeq = maxSeq + 1;
-            const seqStr = nextSeq < 10000 ? String(nextSeq).padStart(4, '0') : String(nextSeq);
-            setMemberCode(`${currentYear}${seqStr}`);
-            return;
-          }
-        }
-        setMemberCode(`${currentYear}0001`);
-      } catch (err) {
-        console.error('Erreur calcul code membre:', err);
-        setMemberCode(`${new Date().getFullYear()}0001`);
-      }
-    };
-
-    fetchNextMemberCode();
-  }, [supabase]);
-
   // Mise à jour synchronisée de la date d'expiration par défaut (+1 an) si création modifiée
   const handleCreationDateChange = (newCreationDate: string) => {
     setCreationDate(newCreationDate);
@@ -137,50 +96,64 @@ export default function NewMemberPage() {
         throw new Error('Le Code Client est obligatoire.');
       }
 
-      // 1. Enregistrement du membre
-      let newMember: Member;
-      const codeToUse = memberCode.trim();
+      const enteredClientCode = clientCode.trim();
 
-      const { data: memberData, error: memberError } = await supabase
+      // 1. Enregistrement du membre avec son Code Client unique saisi
+      // Tentative d'insertion avec member_code et client_code.
+      // Si la colonne client_code n'a pas encore été créée dans Supabase (schema cache),
+      // nous basculons automatiquement sur member_code uniquement pour garantir le succès de l'enregistrement.
+      let insertPayload: Record<string, any> = {
+        first_name: firstName.trim(),
+        last_name: lastName.trim(),
+        account_type: accountType,
+        member_code: enteredClientCode,
+        client_code: enteredClientCode,
+        status: 'actif',
+      };
+
+      let { data: memberData, error: memberError } = await supabase
         .from('members')
-        .insert({
-          first_name: firstName.trim(),
-          last_name: lastName.trim(),
-          account_type: accountType,
-          member_code: codeToUse,
-          status: 'actif',
-        })
+        .insert(insertPayload)
         .select()
         .single();
 
-      if (memberError || !memberData) {
-        if (memberError?.message?.includes('duplicate key')) {
-          const { data: atomicData, error: atomicErr } = await supabase.rpc(
-            'create_member_atomic',
-            {
-              p_first_name: firstName.trim(),
-              p_last_name: lastName.trim(),
-              p_account_type: accountType,
-            }
-          );
-          if (atomicErr || !atomicData) {
-            throw new Error(atomicErr?.message || 'Erreur lors de la création du membre.');
-          }
-          newMember = atomicData as unknown as Member;
-        } else {
-          throw new Error(memberError?.message || 'Erreur lors de la création du membre.');
-        }
-      } else {
-        newMember = memberData as Member;
+      // Fallback si la colonne client_code n'est pas trouvée dans le cache du schéma Supabase
+      if (
+        memberError &&
+        (memberError.message?.includes('client_code') ||
+          memberError.details?.includes('client_code') ||
+          memberError.code === 'PGRST204')
+      ) {
+        delete insertPayload.client_code;
+        const retry = await supabase
+          .from('members')
+          .insert(insertPayload)
+          .select()
+          .single();
+        memberData = retry.data;
+        memberError = retry.error;
       }
 
+      if (memberError || !memberData) {
+        if (
+          memberError?.message?.includes('duplicate key') ||
+          memberError?.message?.includes('unique constraint')
+        ) {
+          throw new Error(
+            `Ce Code Client "${enteredClientCode}" existe déjà dans le système. Veuillez saisir un code client unique.`
+          );
+        }
+        throw new Error(memberError?.message || 'Erreur lors de la création du membre.');
+      }
+
+      const newMember = memberData as Member;
       setCreatedMember(newMember);
 
-      // 2. Émission de la carte avec les dates choisies
+      // 2. Émission de la carte associée avec l'identifiant basé directement sur ce Code Client
       if (createCardNow) {
         const rawToken = generateSecureToken(32);
         const tokenHash = hashToken(rawToken);
-        const cardIdentifier = generateCardIdentifier(codeToUse);
+        const cardIdentifier = generateCardIdentifier(enteredClientCode);
 
         const creationObj = new Date(`${creationDate}T${new Date().toTimeString().split(' ')[0]}`);
         const expirationObj = new Date(`${expirationDate}T23:59:59.999Z`);
@@ -354,7 +327,7 @@ export default function NewMemberPage() {
                   htmlFor="creationDate"
                   className="block text-[11px] font-semibold text-slate-600 uppercase mb-1.5"
                 >
-                  Date de Création de la Carte
+                  Date d&apos;Adhésion
                 </label>
                 <input
                   id="creationDate"
@@ -411,7 +384,7 @@ export default function NewMemberPage() {
           </div>
 
           {error && (
-            <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2.5">
+            <div className="p-4 rounded-xl bg-transparent border border-rose-500/60 text-rose-600 text-xs flex items-center gap-2.5">
               <AlertCircle size={16} className="shrink-0 text-rose-600" />
               <span>{error}</span>
             </div>

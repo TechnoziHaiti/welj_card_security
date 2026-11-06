@@ -11,7 +11,6 @@ import {
   AlertCircle,
   Loader2,
   QrCode,
-  Clock,
   Camera,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
@@ -81,16 +80,7 @@ function LoginForm() {
 
   return (
     <form className="space-y-5" onSubmit={handleLogin}>
-      {reason === 'inactivity' && (
-        <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3.5 flex items-start gap-2.5 text-amber-300 text-xs font-medium">
-          <Clock size={16} className="shrink-0 mt-0.5 text-amber-400" />
-          <span>
-            Votre session a expiré après 30 minutes d&apos;inactivité. Veuillez vous reconnecter pour continuer.
-          </span>
-        </div>
-      )}
-
-      {isScanningTarget && reason !== 'inactivity' && (
+      {isScanningTarget && (
         <div className="rounded-xl bg-blue-500/10 border border-blue-500/30 p-3.5 flex items-start gap-2.5 text-blue-300 text-xs font-medium">
           <Camera size={16} className="shrink-0 mt-0.5 text-blue-400" />
           <span>

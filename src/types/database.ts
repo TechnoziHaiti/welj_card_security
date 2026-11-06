@@ -14,8 +14,8 @@ export interface Profile {
 
 export interface Member {
   id: string;
-  member_code: string;
-  client_code?: string | null;
+  client_code: string;
+  member_code?: string | null;
   first_name: string;
   last_name: string;
   account_type: AccountType;
@@ -56,6 +56,7 @@ export interface VerificationResponse {
   card_identifier?: string;
   first_name?: string;
   last_name?: string;
+  client_code?: string;
   member_code?: string;
   account_type?: AccountType;
   created_at?: string;
@@ -96,6 +97,7 @@ export interface Database {
         Row: Member;
         Insert: {
           id?: string;
+          client_code: string;
           member_code?: string;
           first_name: string;
           last_name: string;
@@ -106,6 +108,7 @@ export interface Database {
         };
         Update: {
           id?: string;
+          client_code?: string;
           member_code?: string;
           first_name?: string;
           last_name?: string;

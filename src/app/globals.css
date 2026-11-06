@@ -107,3 +107,30 @@ html, body {
   );
   pointer-events: none;
 }
+
+/* Optimisation flux vidéo caméra : préserve le ratio 1:1 géométrique exact pour décodage QR instantané */
+#qr-reader {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: #000 !important;
+}
+
+#qr-reader video {
+  max-width: 100% !important;
+  max-height: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+  border-radius: 0.75rem !important;
+  margin: auto !important;
+}
+
+#qr-reader #qr-shaded-region {
+  border: none !important;
+}

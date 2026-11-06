@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateSecureToken, hashToken, generateCardIdentifier } from '../src/lib/crypto.ts';
-import { calculateExpirationDate, isCardExpired, isExpiringSoon } from '../src/lib/dates.ts';
+import { calculateExpirationDate, isCardExpired, isExpiringSoon, getEffectiveCardStatus } from '../src/lib/dates.ts';
 
 test('1. Sécurité Cryptographique des Tokens QR', async (t) => {
   await t.test('Génération de tokens uniques haute entropie', () => {
@@ -70,6 +70,19 @@ test('2. Règle Métier d\'Expiration (1 an à 23:59:59)', async (t) => {
 
     assert.equal(isExpiringSoon(expiringIn15Days, 30), true, 'Doit alerter sous 30 jours');
     assert.equal(isExpiringSoon(expiringIn60Days, 30), false, 'Pas d\'alerte à 60 jours');
+  });
+
+  await t.test('Statut effectif dynamique (getEffectiveCardStatus)', () => {
+    const pastDate = new Date(Date.now() - 1000 * 60 * 60 * 24); // hier
+    const futureDate = new Date(Date.now() + 1000 * 60 * 60 * 24 * 300); // futur
+
+    // Carte marquée "active" en DB mais dont la date d'expiration est dépassée -> doit être "expiree"
+    assert.equal(getEffectiveCardStatus({ status: 'active', expires_at: pastDate }), 'expiree', 'Date passée => statut effectif "expiree"');
+    assert.equal(getEffectiveCardStatus({ status: 'active', expires_at: futureDate }), 'active', 'Date future => statut effectif "active"');
+
+    // Révocation permanente
+    assert.equal(getEffectiveCardStatus({ status: 'revoquee', expires_at: pastDate }), 'revoquee', 'Carte révoquée reste révoquée');
+    assert.equal(getEffectiveCardStatus({ status: 'revoquee', expires_at: futureDate }), 'revoquee', 'Carte révoquée reste révoquée');
   });
 });
 

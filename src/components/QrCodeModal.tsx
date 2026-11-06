@@ -19,7 +19,7 @@ export function QrCodeModal({ isOpen, onClose, card, member, rawToken }: QrCodeM
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
 
   const baseUrl =
-    typeof window !== 'undefined' && window.location.origin && !window.location.origin.includes('localhost')
+    typeof window !== 'undefined' && window.location.origin
       ? window.location.origin
       : 'https://weljcard.vercel.app';
 

@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -25,8 +26,9 @@ import {
 import { StatusBadge } from '@/components/StatusBadge';
 import { QrCodeModal } from '@/components/QrCodeModal';
 import { createClient } from '@/lib/supabase/client';
-import { formatDateFr, formatDateTimeFr, calculateExpirationDate } from '@/lib/dates';
+import { formatDateFr, formatDateTimeFr, calculateExpirationDate, getEffectiveCardStatus, formatDateShortFr } from '@/lib/dates';
 import { generateSecureToken, hashToken, generateCardIdentifier } from '@/lib/crypto';
+import { generateQrDataUrl, getVerificationUrl } from '@/lib/qr';
 import { Member, Card, MemberStatus, AccountType } from '@/types/database';
 
 interface Props {
@@ -46,6 +48,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
   const [isEditing, setIsEditing] = useState(false);
   const [editFirstName, setEditFirstName] = useState(member.first_name);
   const [editLastName, setEditLastName] = useState(member.last_name);
+  const [editClientCode, setEditClientCode] = useState(member.client_code || member.member_code || '');
   const [editAccountType, setEditAccountType] = useState<AccountType>(member.account_type);
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -65,16 +68,38 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
     setMessage(null);
 
     try {
-      const { data, error } = await supabase
+      const editCode = editClientCode.trim();
+      let updatePayload: Record<string, any> = {
+        first_name: editFirstName.trim(),
+        last_name: editLastName.trim(),
+        member_code: editCode,
+        client_code: editCode,
+        account_type: editAccountType,
+      };
+
+      let { data, error } = await supabase
         .from('members')
-        .update({
-          first_name: editFirstName.trim(),
-          last_name: editLastName.trim(),
-          account_type: editAccountType,
-        })
+        .update(updatePayload)
         .eq('id', member.id)
         .select()
         .single();
+
+      if (
+        error &&
+        (error.message?.includes('client_code') ||
+          error.details?.includes('client_code') ||
+          error.code === 'PGRST204')
+      ) {
+        delete updatePayload.client_code;
+        const retry = await supabase
+          .from('members')
+          .update(updatePayload)
+          .eq('id', member.id)
+          .select()
+          .single();
+        data = retry.data;
+        error = retry.error;
+      }
 
       if (error || !data) {
         throw new Error(error?.message || 'Erreur lors de la mise à jour.');
@@ -132,7 +157,8 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
       const rawToken = generateSecureToken(32);
       const tokenHash = hashToken(rawToken);
       const existingCount = cards.filter((c) => c.member_id === member.id).length;
-      const cardIdentifier = generateCardIdentifier(member.member_code, existingCount > 0 ? `R${existingCount}` : undefined);
+      const baseCode = member.client_code || member.member_code || 'MEMBRE';
+      const cardIdentifier = generateCardIdentifier(baseCode, existingCount > 0 ? `R${existingCount}` : undefined);
       const now = new Date();
       const expiresAt = calculateExpirationDate(now);
 
@@ -205,7 +231,8 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
       const rawToken = generateSecureToken(32);
       const tokenHash = hashToken(rawToken);
       const existingCount = cards.filter((c) => c.member_id === member.id).length;
-      const cardIdentifier = generateCardIdentifier(member.member_code, `R${existingCount}`);
+      const baseCode = member.client_code || member.member_code || 'MEMBRE';
+      const cardIdentifier = generateCardIdentifier(baseCode, `R${existingCount}`);
       const expiresAt = calculateExpirationDate(now);
 
       const { data: newCard, error: newCardError } = await supabase
@@ -312,7 +339,19 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
     }
   };
 
-  const activeCard = cards.find((c) => c.status === 'active');
+  const activeCard = cards.find((c) => getEffectiveCardStatus(c) === 'active');
+  const [cardQrDataUrl, setCardQrDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (activeCard) {
+      const verifyUrl = getVerificationUrl(activeCard.card_identifier);
+      generateQrDataUrl(verifyUrl, 260)
+        .then(setCardQrDataUrl)
+        .catch(() => {});
+    } else {
+      setCardQrDataUrl(null);
+    }
+  }, [activeCard?.id, activeCard?.card_identifier]);
 
   return (
     <div className="space-y-6">
@@ -333,7 +372,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
               <StatusBadge status={member.status} size="sm" />
             </div>
             <p className="text-xs text-slate-600 font-mono mt-0.5">
-              Code de la Carte : <span className="font-bold text-blue-600">{member.member_code}</span> &bull; Adhérent depuis le {formatDateFr(member.created_at)}
+              Code Client : <span className="font-bold text-blue-600">{member.client_code || member.member_code}</span> &bull; Adhérent depuis le {formatDateFr(member.created_at)}
             </p>
           </div>
         </div>
@@ -354,7 +393,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
           className={`p-3.5 rounded-xl text-xs flex items-center gap-2 border ${
             message.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border-rose-200'
+              : 'bg-transparent text-rose-700 border-rose-400'
           }`}
         >
           {message.type === 'success' ? <CheckCircle2 size={16} className="text-emerald-600" /> : <AlertCircle size={16} className="text-rose-600" />}
@@ -394,13 +433,13 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
             <div className="space-y-4 text-xs">
               <div>
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
-                  Code de la Carte
+                  Code Client
                 </span>
                 <span className="font-mono font-bold text-blue-600 text-sm mt-0.5 block">
-                  {member.member_code}
+                  {member.client_code || member.member_code}
                 </span>
                 <span className="text-[10px] text-slate-500">
-                  Code officiel de la carte, attribué de manière séquentielle et atomique.
+                  Référence interne ou numéro de dossier client renseigné à la création.
                 </span>
               </div>
 
@@ -470,6 +509,19 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
             </div>
           ) : (
             <form onSubmit={handleSaveMember} className="space-y-4 text-xs">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
+                  Code Client *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editClientCode}
+                  onChange={(e) => setEditClientCode(e.target.value)}
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                />
+              </div>
+
               <div>
                 <label className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
                   Nom de famille
@@ -543,46 +595,119 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
             </h2>
 
             {activeCard ? (
-              <div className="bg-gradient-to-br from-[#0a152f] via-[#112349] to-[#19305d] text-white rounded-2xl p-6 shadow-xl border border-blue-800/50 relative overflow-hidden">
-                <div className="absolute top-0 right-0 -mt-4 -mr-4 w-36 h-36 bg-blue-500/20 rounded-full blur-xl pointer-events-none" />
-
-                <div className="flex items-start justify-between relative z-10 mb-6">
-                  <div>
-                    <span className="text-[10px] text-blue-300 font-mono tracking-widest uppercase block">
-                      WELJ CARD SECURITY &bull; CARTE OFFICIELLE
-                    </span>
-                    <h3 className="text-xl font-mono font-bold tracking-wider mt-1 text-white">
-                      {activeCard.card_identifier}
-                    </h3>
+              <div className="space-y-4">
+                {/* MAQUETTE OFFICIELLE RÉELLE DE LA CARTE WELJ */}
+                <div className="relative w-full max-w-[480px] mx-auto bg-white rounded-2xl shadow-xl border border-stone-200/90 overflow-hidden">
+                  {/* Badge de statut discret en haut à droite */}
+                  <div className="absolute top-3 right-3 z-10">
+                    <StatusBadge status={getEffectiveCardStatus(activeCard)} size="sm" />
                   </div>
-                  <StatusBadge status="active" size="sm" />
+
+                  {/* En-tête officiel : Logo Welj | MEMBERSHIP + Formule */}
+                  <div className="px-5 pt-4 pb-1.5 sm:px-6 sm:pt-4.5 sm:pb-2 flex items-center pr-24">
+                    {/* Logo Welj Express Services (légèrement plus grand) */}
+                    <div className="shrink-0">
+                      <Image
+                        src="/logo.png"
+                        alt="Welj Express Services"
+                        width={150}
+                        height={60}
+                        className="h-10 sm:h-11 w-auto object-contain"
+                        priority
+                        unoptimized
+                      />
+                    </div>
+
+                    {/* Ligne de séparation verticale positionnée sur le prénom Emmanuel */}
+                    <div className="w-[2.5px] h-9 sm:h-10 bg-slate-900 ml-6 sm:ml-8 mr-3.5 sm:mr-4 rounded-full shrink-0" />
+
+                    {/* MEMBERSHIP + TYPE */}
+                    <div>
+                      <h3 className="text-lg sm:text-xl font-black tracking-tight text-[#0f3b75] leading-none uppercase">
+                        MEMBERSHIP
+                      </h3>
+                      <p className="text-xs sm:text-sm font-bold text-amber-500 capitalize tracking-wide mt-1">
+                        {member.account_type || 'Platinum'}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Corps de la carte avec les 2 colonnes */}
+                  <div className="px-5 sm:px-6 py-1.5 sm:py-2 grid grid-cols-2 gap-3 sm:gap-5 text-[#0f3b75]">
+                    {/* Colonne 1 : Titulaire & Code client */}
+                    <div className="space-y-2">
+                      <div>
+                        <span className="block text-[11px] sm:text-xs font-bold text-[#0f3b75]">
+                          Member
+                        </span>
+                        <span className="block text-xs sm:text-sm font-bold text-slate-900 tracking-tight leading-snug">
+                          {member.last_name} {member.first_name}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="block text-[11px] sm:text-xs font-bold text-[#0f3b75]">
+                          Code client
+                        </span>
+                        <span className="block text-sm sm:text-base font-bold text-slate-900 font-mono tracking-wider">
+                          {member.client_code || member.member_code}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Colonne 2 : Date d'adhésion & Date d'expiration */}
+                    <div className="space-y-2">
+                      <div>
+                        <span className="block text-[11px] sm:text-xs font-bold text-[#0f3b75]">
+                          Date d&apos;adhésion
+                        </span>
+                        <span className="block text-xs sm:text-sm font-bold text-slate-900 font-mono tracking-tight">
+                          {formatDateShortFr(activeCard.created_at)}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className="block text-[11px] sm:text-xs font-bold text-[#0f3b75]">
+                          Date d&apos;expiration
+                        </span>
+                        <span className="block text-xs sm:text-sm font-bold text-slate-900 font-mono tracking-tight">
+                          {formatDateShortFr(activeCard.expires_at)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* QR Code officiel centré en bas sans encadrement ni texte */}
+                  {cardQrDataUrl && (
+                    <div className="flex items-center justify-center pt-0.5 pb-2.5">
+                      <img
+                        src={cardQrDataUrl}
+                        alt={`QR Code ${activeCard.card_identifier}`}
+                        className="w-16 h-16 sm:w-18 sm:h-18 object-contain"
+                      />
+                    </div>
+                  )}
+
+                  {/* Bandeau inférieur officiel bleu marine */}
+                  <div className="bg-[#123b70] py-2 sm:py-2.5 text-center px-4">
+                    <p className="text-white font-black tracking-widest text-[11px] sm:text-xs uppercase">
+                      PI RAPID, PI BA PRI, PI PREW
+                    </p>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 text-xs relative z-10 pt-2 border-t border-blue-800/60">
-                  <div>
-                    <span className="text-[10px] text-blue-300 uppercase block">Titulaire</span>
-                    <span className="font-bold text-sm block">{member.first_name} {member.last_name}</span>
-                    <span className="text-[11px] font-mono text-blue-200">Identifiant : {activeCard.card_identifier}</span>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[10px] text-blue-300 uppercase block">Validité</span>
-                    <span className="text-[11px] text-blue-200 block">Du {formatDateFr(activeCard.created_at)}</span>
-                    <span className="font-bold text-white block">Au {formatDateFr(activeCard.expires_at)}</span>
-                  </div>
-                </div>
-
-                {/* Actions de la carte active */}
-                <div className="mt-5 pt-4 border-t border-blue-800/60 flex flex-wrap gap-2.5">
+                {/* Boutons d'action sous la carte */}
+                <div className="flex flex-wrap gap-2.5 justify-center sm:justify-start pt-2">
                   <button
                     onClick={() => {
                       setActiveModalCard(activeCard);
                       setRawModalToken(null);
                       setShowQrModal(true);
                     }}
-                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-semibold text-xs backdrop-blur-sm transition-colors border border-white/15"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-stone-50 text-slate-700 font-semibold text-xs transition-colors border border-stone-300 shadow-sm"
                   >
-                    <QrCode size={14} />
-                    <span>Afficher / Télécharger le QR</span>
+                    <QrCode size={14} className="text-blue-600" />
+                    <span>Agrandir / Télécharger le QR</span>
                   </button>
 
                   {isAdmin && (
@@ -590,7 +715,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                       <button
                         onClick={() => handleRenewCard(activeCard)}
                         disabled={actionLoading || member.status !== 'actif'}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
                       >
                         <RefreshCw size={14} />
                         <span>Renouveler la carte (1 an)</span>
@@ -599,7 +724,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                       <button
                         onClick={() => handleRevokeCard(activeCard)}
                         disabled={actionLoading}
-                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer"
                       >
                         <ShieldAlert size={14} />
                         <span>Révoquer</span>
@@ -642,7 +767,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                     <tr className="bg-stone-100 border-b border-stone-200 text-stone-600 font-semibold uppercase text-[10px]">
                       <th className="py-2.5 px-3">Identifiant</th>
                       <th className="py-2.5 px-3">Statut</th>
-                      <th className="py-2.5 px-3">Date d&apos;Émission</th>
+                      <th className="py-2.5 px-3">Date d&apos;Adhésion</th>
                       <th className="py-2.5 px-3">Date d&apos;Expiration</th>
                       <th className="py-2.5 px-3">Révocation / Remplacement</th>
                       {isAdmin && <th className="py-2.5 px-3 text-right">Actions</th>}
@@ -655,7 +780,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                           {card.card_identifier}
                         </td>
                         <td className="py-2.5 px-3">
-                          <StatusBadge status={card.status} size="sm" />
+                          <StatusBadge status={getEffectiveCardStatus(card)} size="sm" />
                         </td>
                         <td className="py-2.5 px-3 text-slate-500">
                           {formatDateFr(card.created_at)}

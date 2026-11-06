@@ -4,12 +4,23 @@ import { CardStatus, MemberStatus, VerificationResultType } from '@/types/databa
 
 interface StatusBadgeProps {
   status: CardStatus | MemberStatus | VerificationResultType | string;
+  expiresAt?: string | Date | null;
   size?: 'sm' | 'md' | 'lg';
   showIcon?: boolean;
 }
 
-export function StatusBadge({ status, size = 'md', showIcon = true }: StatusBadgeProps) {
-  const normalized = status.toLowerCase();
+export function StatusBadge({ status, expiresAt, size = 'md', showIcon = true }: StatusBadgeProps) {
+  let effective = status;
+  if (
+    expiresAt &&
+    effective !== 'revoquee' &&
+    effective !== 'révoquée' &&
+    new Date() > new Date(expiresAt)
+  ) {
+    effective = 'expiree';
+  }
+
+  const normalized = effective.toLowerCase();
 
   const sizeClasses = {
     sm: 'text-xs px-2.5 py-0.5 gap-1 font-semibold',

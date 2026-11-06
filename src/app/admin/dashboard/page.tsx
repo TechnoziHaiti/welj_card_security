@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getCurrentUserRole } from '@/lib/auth-helpers';
 import { StatusBadge } from '@/components/StatusBadge';
-import { formatDateFr, formatDateTimeFr, isExpiringSoon } from '@/lib/dates';
+import { formatDateFr, formatDateTimeFr, isExpiringSoon, getEffectiveCardStatus } from '@/lib/dates';
 import { Card, Member, VerificationLog } from '@/types/database';
 
 export const dynamic = 'force-dynamic';
@@ -278,7 +278,7 @@ export default async function AdminDashboardPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2.5 shrink-0">
-                    <StatusBadge status={card.status} size="sm" />
+                    <StatusBadge status={getEffectiveCardStatus(card)} size="sm" />
                     <span className="text-[11px] text-slate-500">
                       {formatDateFr(card.created_at)}
                     </span>

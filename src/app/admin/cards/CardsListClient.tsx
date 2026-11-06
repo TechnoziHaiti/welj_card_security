@@ -20,7 +20,7 @@ import {
 import { StatusBadge } from '@/components/StatusBadge';
 import { QrCodeModal } from '@/components/QrCodeModal';
 import { createClient } from '@/lib/supabase/client';
-import { formatDateFr, isExpiringSoon } from '@/lib/dates';
+import { formatDateFr, isExpiringSoon, getEffectiveCardStatus } from '@/lib/dates';
 import { generateSecureToken, hashToken, generateCardIdentifier } from '@/lib/crypto';
 import { calculateExpirationDate } from '@/lib/dates';
 import { Card, Member } from '@/types/database';
@@ -145,7 +145,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
       const rawToken = generateSecureToken(32);
       const tokenHash = hashToken(rawToken);
       const existingCount = cards.filter((c) => c.member_id === oldCard.member_id).length;
-      const baseCode = oldCard.members?.member_code || oldCard.card_identifier.replace(/^WELJ-?/i, '').split('-')[0];
+      const baseCode = oldCard.members?.client_code || oldCard.members?.member_code || oldCard.card_identifier.replace(/^WELJ-?/i, '').split('-')[0];
       const newCardIdentifier = generateCardIdentifier(baseCode, existingCount > 0 ? `R${existingCount}` : undefined);
       const expiresAt = calculateExpirationDate(now);
 
@@ -185,19 +185,21 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
     }
   };
 
-  // Filtrage combiné : recherche (nom, prénom, code, card_id) + statut
+  // Filtrage combiné : recherche (nom, prénom, code, card_id) + statut effectif dynamique
   const filteredCards = cards.filter((c) => {
-    // Filtre statut
-    if (statusFilter === 'active' && c.status !== 'active') return false;
-    if (statusFilter === 'expiree' && c.status !== 'expiree') return false;
-    if (statusFilter === 'revoquee' && c.status !== 'revoquee') return false;
-    if (statusFilter === 'expiring' && !isExpiringSoon(c.expires_at, 30)) return false;
+    const effectiveStatus = getEffectiveCardStatus(c);
+
+    // Filtre statut calculé dynamiquement
+    if (statusFilter === 'active' && effectiveStatus !== 'active') return false;
+    if (statusFilter === 'expiree' && effectiveStatus !== 'expiree') return false;
+    if (statusFilter === 'revoquee' && effectiveStatus !== 'revoquee') return false;
+    if (statusFilter === 'expiring' && (effectiveStatus !== 'active' || !isExpiringSoon(c.expires_at, 30))) return false;
 
     // Filtre recherche
     if (searchTerm.trim()) {
       const q = searchTerm.trim().toLowerCase();
       const memberName = c.members ? `${c.members.first_name} ${c.members.last_name}`.toLowerCase() : '';
-      const memberCode = c.members?.member_code?.toLowerCase() || '';
+      const memberCode = (c.members?.client_code || c.members?.member_code || '').toLowerCase();
       const cardId = c.card_identifier.toLowerCase();
 
       return memberName.includes(q) || memberCode.includes(q) || cardId.includes(q);
@@ -226,7 +228,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
           className={`p-3.5 rounded-xl text-xs flex items-center gap-2 border ${
             alert.type === 'success'
               ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-              : 'bg-rose-50 text-rose-800 border-rose-200'
+              : 'bg-transparent text-rose-700 border-rose-400'
           }`}
         >
           {alert.type === 'success' ? <CheckCircle2 size={16} /> : <AlertCircle size={16} />}
@@ -291,7 +293,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                   <th className="py-3.5 px-4">Identifiant Carte</th>
                   <th className="py-3.5 px-4">Titulaire (Membre)</th>
                   <th className="py-3.5 px-4">Statut</th>
-                  <th className="py-3.5 px-4">Création</th>
+                  <th className="py-3.5 px-4">Date d&apos;Adhésion</th>
                   <th className="py-3.5 px-4">Expiration (1 an)</th>
                   <th className="py-3.5 px-4 text-center">QR Code</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>
@@ -299,6 +301,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
               </thead>
               <tbody className="divide-y divide-stone-200 text-slate-800">
                 {filteredCards.map((card) => {
+                  const effectiveStatus = getEffectiveCardStatus(card);
                   const expiringSoon = isExpiringSoon(card.expires_at, 30);
 
                   return (
@@ -325,8 +328,8 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
-                          <StatusBadge status={card.status} size="sm" />
-                          {expiringSoon && card.status === 'active' && (
+                          <StatusBadge status={effectiveStatus} size="sm" />
+                          {expiringSoon && effectiveStatus === 'active' && (
                             <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                               Bientôt
                             </span>
@@ -337,7 +340,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                         {formatDateFr(card.created_at)}
                       </td>
                       <td className="py-3 px-4 text-slate-600">
-                        <span className={expiringSoon ? 'font-bold text-amber-700' : ''}>
+                        <span className={effectiveStatus === 'expiree' ? 'font-bold text-amber-700' : expiringSoon ? 'font-bold text-amber-700' : ''}>
                           {formatDateFr(card.expires_at)}
                         </span>
                       </td>
@@ -359,7 +362,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                       <td className="py-3 px-4 text-right">
                         {isAdmin ? (
                           <div className="inline-flex items-center gap-1.5">
-                            {card.status === 'active' && (
+                            {(effectiveStatus === 'active' || effectiveStatus === 'expiree') && (
                               <>
                                 <button
                                   onClick={() => handleRenew(card)}
@@ -369,14 +372,16 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                                 >
                                   <RefreshCw size={13} />
                                 </button>
-                                <button
-                                  onClick={() => handleRevoke(card)}
-                                  disabled={actionLoading}
-                                  className="px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border border-red-600 text-[11px] font-bold transition-colors shadow-sm cursor-pointer"
-                                  title="Révoquer"
-                                >
-                                  <ShieldAlert size={13} />
-                                </button>
+                                {effectiveStatus === 'active' && (
+                                  <button
+                                    onClick={() => handleRevoke(card)}
+                                    disabled={actionLoading}
+                                    className="px-2.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white border border-red-600 text-[11px] font-bold transition-colors shadow-sm cursor-pointer"
+                                    title="Révoquer"
+                                  >
+                                    <ShieldAlert size={13} />
+                                  </button>
+                                )}
                               </>
                             )}
                             {card.status === 'expiree' && (

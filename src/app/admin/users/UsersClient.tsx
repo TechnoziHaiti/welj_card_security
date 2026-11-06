@@ -195,7 +195,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
       )}
 
       {error && (
-        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs flex items-center justify-between">
+        <div className="p-3.5 rounded-xl bg-transparent border border-rose-400 text-rose-700 text-xs flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertCircle size={16} className="text-rose-600 shrink-0" />
             <span>{error}</span>
