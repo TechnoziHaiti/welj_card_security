@@ -15,13 +15,19 @@ import {
   CheckCircle2,
   RefreshCw,
   SwitchCamera,
+  ZoomIn,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 const INACTIVITY_TIMEOUT_MS = 30 * 60 * 1000; // 30 minutes d'inactivité
 
-// Réhausseur dynamique de contraste (histogram stretching) pour décoder les QR codes dans le noir ou avec reflets
-function enhanceLuminance(ctx: CanvasRenderingContext2D, width: number, height: number) {
+// Réhausseur dynamique de contraste (histogram stretching) et filtre anti-flou (unsharp mask 3x3)
+function enhanceLuminanceAndSharpen(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  sharpen = true
+) {
   try {
     const imgData = ctx.getImageData(0, 0, width, height);
     const data = imgData.data;
@@ -35,16 +41,36 @@ function enhanceLuminance(ctx: CanvasRenderingContext2D, width: number, height: 
     }
 
     const range = max - min;
-    if (range < 12 || range > 215) return;
-
-    const scale = 255 / range;
-    for (let i = 0; i < data.length; i += 4) {
-      const lum = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000;
-      const v = Math.min(255, Math.max(0, (lum - min) * scale));
-      data[i] = v;
-      data[i + 1] = v;
-      data[i + 2] = v;
+    if (range >= 12 && range <= 220) {
+      const scale = 255 / range;
+      for (let i = 0; i < data.length; i += 4) {
+        const lum = (data[i] * 299 + data[i + 1] * 587 + data[i + 2] * 114) / 1000;
+        const v = Math.min(255, Math.max(0, (lum - min) * scale));
+        data[i] = v;
+        data[i + 1] = v;
+        data[i + 2] = v;
+      }
     }
+
+    // Filtre de netteté pour éliminer le flou de mise au point des webcams PC
+    if (sharpen) {
+      const copy = new Uint8ClampedArray(data);
+      for (let y = 1; y < height - 1; y++) {
+        let idx = (y * width + 1) * 4;
+        for (let x = 1; x < width - 1; x++) {
+          const top = idx - width * 4;
+          const bot = idx + width * 4;
+          const left = idx - 4;
+          const right = idx + 4;
+          for (let c = 0; c < 3; c++) {
+            const v = 5 * copy[idx + c] - copy[top + c] - copy[bot + c] - copy[left + c] - copy[right + c];
+            data[idx + c] = v < 0 ? 0 : v > 255 ? 255 : v;
+          }
+          idx += 4;
+        }
+      }
+    }
+
     ctx.putImageData(imgData, 0, 0);
   } catch {}
 }
@@ -62,6 +88,7 @@ export default function PublicVerifyPage() {
   const [cameraList, setCameraList] = useState<Array<{ id: string; label: string }>>([]);
   const [activeCameraId, setActiveCameraId] = useState<string>('');
   const [screenTorch, setScreenTorch] = useState<boolean>(false);
+  const [zoomLevel, setZoomLevel] = useState<number>(2);
 
   const scannerRef = useRef<any>(null);
   const isRedirectingRef = useRef<boolean>(false);
@@ -69,6 +96,39 @@ export default function PublicVerifyPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const activeIntervalsRef = useRef<any[]>([]);
   const activeZxingsRef = useRef<any[]>([]);
+  const zoomLevelRef = useRef<number>(2);
+
+  // Application du zoom visuel et matériel sur la caméra active
+  const applyZoomToVideo = useCallback((level: number) => {
+    zoomLevelRef.current = level;
+    const videoEl = document.querySelector<HTMLVideoElement>('#qr-reader video');
+    if (videoEl) {
+      videoEl.style.transform = `scale(${level})`;
+      videoEl.style.transformOrigin = 'center center';
+      videoEl.style.transition = 'transform 0.25s ease-out';
+    }
+
+    try {
+      const stream = videoEl?.srcObject as MediaStream;
+      const track = stream?.getVideoTracks?.()[0];
+      if (track) {
+        const caps = (track.getCapabilities?.() || {}) as any;
+        if (caps?.zoom) {
+          const minZ = caps.zoom.min || 1;
+          const maxZ = caps.zoom.max || 1;
+          const targetZ = Math.max(minZ, Math.min(level, maxZ));
+          track.applyConstraints({ advanced: [{ zoom: targetZ }] as any }).catch(() => {});
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Bascule cyclique de zoom (1x -> 2x -> 3x -> 1x)
+  const handleToggleZoom = () => {
+    const next = zoomLevel === 1 ? 2 : zoomLevel === 2 ? 3 : 1;
+    setZoomLevel(next);
+    applyZoomToVideo(next);
+  };
 
   // Rafraîchir l'horodatage d'activité utilisateur (30 minutes)
   const refreshActivity = useCallback(() => {
@@ -209,10 +269,15 @@ export default function PublicVerifyPage() {
 
       const targetUrl = resolveTargetUrl(decodedText);
 
-      // Redirection immédiate par assignation d'URL
-      window.location.assign(targetUrl);
+      // Redirection instantanée par routeur Next.js (sans rechargement complet de page)
+      router.push(targetUrl);
+      setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          window.location.assign(targetUrl);
+        }
+      }, 800);
     },
-    [refreshActivity]
+    [refreshActivity, router]
   );
 
   // Arrêt sécurisé du scanner et de tous les moteurs de décodage
@@ -355,9 +420,21 @@ export default function PublicVerifyPage() {
         });
         scannerRef.current = html5QrCodeScanner;
 
-        const scanConfig = {
-          fps: 24,
-          disableFlip: false,
+        const scanConfig: any = {
+          fps: 30,
+          disableFlip: true,
+          videoConstraints: {
+            width: { ideal: 1280, min: 640 },
+            height: { ideal: 720, min: 480 },
+            ...(activeCameraId
+              ? { deviceId: { exact: activeCameraId } }
+              : { facingMode: isMobile ? 'environment' : 'user' }),
+          },
+        };
+
+        const basicScanConfig = {
+          fps: 30,
+          disableFlip: true,
         };
 
         try {
@@ -367,9 +444,7 @@ export default function PublicVerifyPage() {
             (decodedText: string) => {
               handleScanSuccess(decodedText);
             },
-            () => {
-              // Frame sans QR Code
-            }
+            () => {}
           );
         } catch (initialErr: any) {
           console.warn('Erreur caméra initiale, tentative avec le périphérique alternatif...', initialErr);
@@ -387,7 +462,7 @@ export default function PublicVerifyPage() {
               scannerRef.current = html5QrCodeScanner;
               await html5QrCodeScanner.start(
                 altDevice.id,
-                scanConfig,
+                basicScanConfig,
                 (decodedText: string) => {
                   handleScanSuccess(decodedText);
                 },
@@ -402,7 +477,7 @@ export default function PublicVerifyPage() {
             }
           }
 
-          // Secours 2 : Tenter avec facingMode 'user' générique
+          // Secours 2 : Tenter avec facingMode 'user' générique basique
           await safeStopScanner(html5QrCodeScanner);
           html5QrCodeScanner = new Html5Qrcode('qr-reader', {
             formatsToSupport: [0],
@@ -412,7 +487,7 @@ export default function PublicVerifyPage() {
           scannerRef.current = html5QrCodeScanner;
           await html5QrCodeScanner.start(
             { facingMode: 'user' },
-            scanConfig,
+            basicScanConfig,
             (decodedText: string) => {
               handleScanSuccess(decodedText);
             },
@@ -436,10 +511,13 @@ export default function PublicVerifyPage() {
           const videoElement = document.querySelector<HTMLVideoElement>('#qr-reader video');
           if (!videoElement) return;
 
+          // Appliquer le zoom sélectionné (Zoom 2x par défaut)
+          applyZoomToVideo(zoomLevelRef.current);
+
           // Création d'un canvas de traitement haute sensibilité
           const workCanvas = document.createElement('canvas');
-          workCanvas.width = 512;
-          workCanvas.height = 512;
+          workCanvas.width = 480;
+          workCanvas.height = 480;
           const workCtx = workCanvas.getContext('2d', { willReadFrequently: true });
 
           // Chargement du moteur ZXing MultiFormatReader avec TRY_HARDER
@@ -455,7 +533,7 @@ export default function PublicVerifyPage() {
             zxingReader.setHints(hints);
           } catch {}
 
-          // Détecteur BarcodeDetector natif Chrome/Edge (GPU)
+          // Détecteur BarcodeDetector natif Chrome/Edge (GPU Ultra-Rapide)
           let nativeDetector: any = null;
           if (typeof window !== 'undefined' && 'BarcodeDetector' in window) {
             try {
@@ -470,7 +548,21 @@ export default function PublicVerifyPage() {
               return;
             }
 
-            if (!videoElement || videoElement.readyState < 2 || !workCtx) return;
+            if (!videoElement || videoElement.readyState < 2) return;
+
+            // Priorité absolue : Détecteur GPU natif directement sur le flux vidéo HD (exécuté sur chaque frame en 2ms)
+            if (nativeDetector) {
+              try {
+                const codes = await nativeDetector.detect(videoElement);
+                if (codes && codes.length > 0 && codes[0].rawValue) {
+                  clearInterval(processInterval);
+                  handleScanSuccess(codes[0].rawValue);
+                  return;
+                }
+              } catch {}
+            }
+
+            if (!workCtx) return;
             const vw = videoElement.videoWidth;
             const vh = videoElement.videoHeight;
             if (vw <= 0 || vh <= 0) return;
@@ -478,19 +570,26 @@ export default function PublicVerifyPage() {
             tick++;
 
             try {
-              // Étape 1 : Zoom numérique 1.8x sur les 55% centraux (zone où se trouve la carte dans le viseur)
-              const useCrop = tick % 3 !== 0; // 2 fois sur 3 = zoom central, 1 fois sur 3 = champ complet
+              // Zoom numérique dynamique centré sur la zone QR
+              const curZoom = zoomLevelRef.current || 2;
+              const cropFactor = curZoom >= 3 ? 0.30 : curZoom >= 2 ? 0.45 : 0.65;
+
+              // 3 frames sur 4 = cadrage serré sur le QR Code (haute résolution), 1 frame sur 4 = vue large
+              const useCrop = tick % 4 !== 0;
               if (useCrop) {
-                const cropW = Math.floor(vw * 0.55);
-                const cropH = Math.floor(vh * 0.55);
+                const cropW = Math.floor(vw * cropFactor);
+                const cropH = Math.floor(vh * cropFactor);
                 const cropX = Math.floor((vw - cropW) / 2);
-                const cropY = Math.floor((vh - cropH) / 2);
-                workCtx.drawImage(videoElement, cropX, cropY, cropW, cropH, 0, 0, 512, 512);
+                const cropY =
+                  tick % 2 === 0
+                    ? Math.floor((vh - cropH) / 2)
+                    : Math.floor(Math.min(vh - cropH, (vh - cropH) / 2 + vh * 0.08));
+                workCtx.drawImage(videoElement, cropX, cropY, cropW, cropH, 0, 0, 480, 480);
               } else {
-                workCtx.drawImage(videoElement, 0, 0, vw, vh, 0, 0, 512, 512);
+                workCtx.drawImage(videoElement, 0, 0, vw, vh, 0, 0, 480, 480);
               }
 
-              // Test 1 : Détection immédiate sur le crop
+              // Test GPU sur le crop zoomé
               if (nativeDetector) {
                 try {
                   const codes = await nativeDetector.detect(workCanvas);
@@ -502,40 +601,52 @@ export default function PublicVerifyPage() {
                 } catch {}
               }
 
-              // Test 2 : Réhaussement automatique du contraste (corrige les pièces sombres et les reflets)
-              enhanceLuminance(workCtx, 512, 512);
+              // Une frame sur deux : application des filtres de netteté et contraste pour ZXing
+              if (tick % 2 === 0) {
+                enhanceLuminanceAndSharpen(workCtx, 480, 480, true);
 
-              // Test 3 : Détecteur GPU sur l'image réhaussée
-              if (nativeDetector) {
-                try {
-                  const codes = await nativeDetector.detect(workCanvas);
-                  if (codes && codes.length > 0 && codes[0].rawValue) {
-                    clearInterval(processInterval);
-                    handleScanSuccess(codes[0].rawValue);
-                    return;
-                  }
-                } catch {}
-              }
+                if (nativeDetector) {
+                  try {
+                    const codes = await nativeDetector.detect(workCanvas);
+                    if (codes && codes.length > 0 && codes[0].rawValue) {
+                      clearInterval(processInterval);
+                      handleScanSuccess(codes[0].rawValue);
+                      return;
+                    }
+                  } catch {}
+                }
 
-              // Test 4 : Décodeur ZXing avec binarisation hybride robuste sur l'image réhaussée
-              if (zxingReader && ZXingLib) {
-                try {
-                  const lumSource = new ZXingLib.HTMLCanvasElementLuminanceSource(workCanvas);
-                  const bitmap = new ZXingLib.BinaryBitmap(new ZXingLib.HybridBinarizer(lumSource));
-                  const decoded = zxingReader.decode(bitmap);
-                  const text = decoded?.getText?.() || decoded?.text;
-                  if (text) {
-                    clearInterval(processInterval);
-                    handleScanSuccess(text);
-                    return;
-                  }
-                } catch {}
+                if (zxingReader && ZXingLib) {
+                  try {
+                    const lumSource = new ZXingLib.HTMLCanvasElementLuminanceSource(workCanvas);
+                    const bitmap = new ZXingLib.BinaryBitmap(new ZXingLib.HybridBinarizer(lumSource));
+                    const decoded = zxingReader.decode(bitmap);
+                    const text = decoded?.getText?.() || decoded?.text;
+                    if (text) {
+                      clearInterval(processInterval);
+                      handleScanSuccess(text);
+                      return;
+                    }
+                  } catch {}
+
+                  try {
+                    const lumSource = new ZXingLib.HTMLCanvasElementLuminanceSource(workCanvas);
+                    const bitmap = new ZXingLib.BinaryBitmap(new ZXingLib.GlobalHistogramBinarizer(lumSource));
+                    const decoded = zxingReader.decode(bitmap);
+                    const text = decoded?.getText?.() || decoded?.text;
+                    if (text) {
+                      clearInterval(processInterval);
+                      handleScanSuccess(text);
+                      return;
+                    }
+                  } catch {}
+                }
               }
             } catch {}
-          }, 90);
+          }, 30);
 
           activeIntervalsRef.current.push(processInterval);
-        }, 250);
+        }, 200);
       } catch (err: any) {
         isStarting = false;
         if (
@@ -655,18 +766,29 @@ export default function PublicVerifyPage() {
             <div className="flex items-center justify-between mb-3 px-1">
               <span className="text-xs text-slate-300 font-medium">Viseur Caméra en Direct</span>
               <div className="flex items-center gap-2">
+                {/* Bouton Zoom Numérique / Matériel */}
+                <button
+                  type="button"
+                  onClick={handleToggleZoom}
+                  className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-500/40 text-[11px] font-bold transition-all cursor-pointer"
+                  title="Agrandir le QR Code (1x, 2x, 3x) pour éviter d'approcher la carte trop près"
+                >
+                  <ZoomIn size={12} />
+                  <span>Zoom {zoomLevel}x</span>
+                </button>
+
                 {/* Bouton Torche Écran pour pièces sombres */}
                 <button
                   type="button"
                   onClick={() => setScreenTorch(!screenTorch)}
-                  className={`inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer border ${
+                  className={`inline-flex items-center py-1 px-2.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer border ${
                     screenTorch
                       ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
-                      : 'bg-slate-800 hover:bg-slate-700 text-amber-300 border-slate-700'
+                      : 'bg-transparent hover:bg-slate-800/40 text-amber-300 border-slate-700'
                   }`}
                   title="Allume un fond blanc lumineux pour éclairer la carte dans l'obscurité"
                 >
-                  <span>💡 {screenTorch ? 'Torche Active' : 'Éclairer la carte'}</span>
+                  <span>{screenTorch ? 'Torche Active' : 'Éclairer la carte'}</span>
                 </button>
 
                 {cameraList.length > 1 && (
@@ -723,17 +845,6 @@ export default function PublicVerifyPage() {
                   </div>
                 </div>
               )}
-            </div>
-
-            {/* Conseils pour mise au point optimale sur webcam PC */}
-            <div className="bg-slate-900/60 rounded-xl p-2.5 mt-2.5 border border-slate-800 text-center">
-              <p className="text-[11px] text-slate-300 font-medium leading-relaxed">
-                💡 <span className="text-blue-300 font-bold">Conseil webcam PC :</span> Tenez la carte à environ <span className="text-white font-bold underline decoration-blue-400 underline-offset-2">25 à 35 cm</span> de la caméra.
-                <br />
-                <span className="text-slate-400 text-[10px]">
-                  Les webcams de PC ont une mise au point fixe : si vous la tenez trop près (moins de 20 cm), le QR Code devient flou. Reculez-le légèrement pour qu&apos;il soit bien net !
-                </span>
-              </p>
             </div>
           </div>
 
