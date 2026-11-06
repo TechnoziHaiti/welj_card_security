@@ -16,6 +16,7 @@ import {
   RefreshCw,
   SwitchCamera,
   ZoomIn,
+  Home,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -906,29 +907,23 @@ export default function PublicVerifyPage() {
           )}
         </div>
 
-        {/* Contrôle de Session et Accès Administration */}
-        <div className="mt-5 flex flex-col items-center gap-3">
-          <div className="flex items-center gap-4 text-xs">
-            {currentUser?.user_metadata?.role === 'admin' ? (
-              <Link
-                href="/admin/dashboard"
-                className="inline-flex items-center gap-1.5 text-slate-400 hover:text-white transition-colors"
-              >
-                <ArrowLeft size={13} />
-                <span>Espace Administration</span>
-              </Link>
-            ) : (
-              <span className="text-[11px] text-slate-400 font-medium">
-                Session active &bull; Déconnexion auto (1h)
-              </span>
-            )}
+        {/* Contrôle de Session et Navigation */}
+        <div className="mt-5 flex flex-col items-center gap-3 w-full">
+          <div className="flex flex-wrap items-center justify-center gap-3 w-full max-w-sm">
+            <Link
+              href="/admin/dashboard"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] active:bg-[#166534] text-white font-bold text-xs transition-all shadow-md shadow-green-950/40 cursor-pointer text-center"
+            >
+              <Home size={15} />
+              <span>Aller au Dashboard</span>
+            </Link>
 
             <button
               type="button"
               onClick={handleLogout}
-              className="inline-flex items-center gap-1.5 text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs transition-all shadow-md shadow-red-950/40 cursor-pointer text-center"
             >
-              <LogOut size={13} />
+              <LogOut size={15} />
               <span>Déconnexion</span>
             </button>
           </div>

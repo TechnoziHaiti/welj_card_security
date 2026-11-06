@@ -1,7 +1,19 @@
 import { redirect } from 'next/navigation';
+import { getCurrentUserRole } from '@/lib/auth-helpers';
 
-export default function HomePage() {
-  // Ouvre directement sur l'onglet Scanner de cartes pour que les agents
-  // puissent travailler immédiatement sans chercher dans les menus.
-  redirect('/verify');
+export default async function HomePage() {
+  const { user, role } = await getCurrentUserRole();
+
+  if (!user) {
+    redirect('/login');
+  }
+
+  // Règle métier :
+  // - Administrateur -> Tableau de bord (/admin/dashboard)
+  // - Agent de Contrôle -> Scanner de cartes (/verify)
+  if (role === 'admin') {
+    redirect('/admin/dashboard');
+  } else {
+    redirect('/verify');
+  }
 }

@@ -318,10 +318,17 @@ export default async function AdminDashboardPage() {
                   className="py-3 flex items-center justify-between gap-3 text-xs"
                 >
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-900 truncate">
-                      {log.cards?.members
-                        ? `${log.cards.members.first_name} ${log.cards.members.last_name}`
-                        : 'Token Inconnu / Non indexé'}
+                    <p className="font-semibold text-slate-900 truncate flex items-center gap-2">
+                      <span>
+                        {log.cards?.members
+                          ? `${log.cards.members.first_name} ${log.cards.members.last_name}`
+                          : 'Token Inconnu / Non indexé'}
+                      </span>
+                      {log.cards?.members?.account_type && (
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-stone-100 text-slate-700 border border-stone-200">
+                          {log.cards.members.account_type}
+                        </span>
+                      )}
                     </p>
                     <p className="text-[11px] text-slate-500 font-mono mt-0.5">
                       {formatDateTimeFr(log.verified_at)}

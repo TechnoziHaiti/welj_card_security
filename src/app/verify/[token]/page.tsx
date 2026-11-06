@@ -46,6 +46,30 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
   const clientIp = forwardedFor ? forwardedFor.split(',')[0].trim() : realIp || null;
   const hashedIp = hashIpAddress(clientIp);
 
+  // Détection du compte agent / administrateur ayant scanné (s'il est authentifié)
+  let scanningAccountInfo = 'Contrôle Public Direct';
+  try {
+    const anonSupabase = await createAnonClient();
+    const {
+      data: { user: authUser },
+    } = await anonSupabase.auth.getUser();
+
+    if (authUser) {
+      const adminDb = createAdminClient();
+      const { data: profile } = await adminDb
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .maybeSingle();
+
+      const operatorName = profile?.full_name || authUser.user_metadata?.full_name || authUser.email?.split('@')[0] || 'Opérateur';
+      const operatorRole = profile?.role === 'admin' ? 'Administrateur' : 'Agent de Contrôle';
+      scanningAccountInfo = `Compte: ${operatorName} (${operatorRole} - ${authUser.email})`;
+    }
+  } catch {}
+
+  const fullAuditAgent = `${scanningAccountInfo} | ${userAgent}`;
+
   // Calcul de l'empreinte cryptographique SHA-256 du token
   const tokenHash = hashToken(token);
 
@@ -210,7 +234,7 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
             result: logResult,
             token_hash_lookup: tokenHash,
             ip_address_hash: hashedIp || null,
-            user_agent: userAgent,
+            user_agent: fullAuditAgent,
           });
         } catch (logErr) {
           console.error('Erreur log verification:', logErr);
@@ -231,7 +255,7 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
             result: 'inconnue',
             token_hash_lookup: tokenHash,
             ip_address_hash: hashedIp || null,
-            user_agent: userAgent,
+            user_agent: fullAuditAgent,
           });
         } catch {}
       }

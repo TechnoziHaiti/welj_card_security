@@ -9,7 +9,6 @@ import {
   ArrowRight,
   AlertCircle,
   Loader2,
-  Scan,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -55,16 +54,31 @@ function LoginForm() {
       }
 
       if (data.user) {
-        const userRole = data.user.user_metadata?.role;
         // Enregistrer l'activité initiale (1 heure = 3600 secondes)
         document.cookie = `welj_last_activity=${Date.now()}; path=/; max-age=3600; SameSite=Lax`;
 
-        if (redirectTo && redirectTo !== '/login') {
-          router.push(redirectTo);
-        } else if (userRole === 'agent') {
-          router.push('/verify');
+        // Résolution du rôle
+        let userRole = data.user.app_metadata?.role || data.user.user_metadata?.role;
+        if (!userRole) {
+          const { data: prof } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', data.user.id)
+            .maybeSingle();
+          userRole = prof?.role || 'agent';
+        }
+
+        // RÈGLE MÉTIER STRICTE :
+        // 1. Si Administrateur ('admin') : va DIRECTEMENT au Dashboard (/admin/dashboard)
+        // 2. Si Agent de Contrôle ('agent') : va DIRECTEMENT au Scanner (/verify)
+        if (userRole === 'admin') {
+          if (redirectTo && redirectTo.startsWith('/admin') && redirectTo !== '/admin/dashboard') {
+            router.push(redirectTo);
+          } else {
+            router.push('/admin/dashboard');
+          }
         } else {
-          router.push('/admin/dashboard');
+          router.push('/verify');
         }
         router.refresh();
       }
@@ -74,13 +88,11 @@ function LoginForm() {
     }
   };
 
-  const isScanningTarget = redirectTo.startsWith('/verify');
-
   return (
     <form className="space-y-5" onSubmit={handleLogin}>
-      {isScanningTarget && (
-        <div className="rounded-xl border border-emerald-500/30 p-3.5 text-emerald-300 text-xs font-medium text-center bg-transparent">
-          Authentification requise pour activer et utiliser le scanner de cartes.
+      {reason === 'inactivity' && (
+        <div className="rounded-xl border border-amber-500/30 p-3.5 text-amber-300 text-xs font-medium text-center bg-transparent">
+          Session expirée après 1 heure d&apos;inactivité. Veuillez vous reconnecter.
         </div>
       )}
 
@@ -152,15 +164,10 @@ function LoginForm() {
               <Loader2 size={16} className="animate-spin" />
               <span>Authentification...</span>
             </>
-          ) : isScanningTarget ? (
-            <>
-              <Scan size={17} />
-              <span>Scanner carte</span>
-            </>
           ) : (
             <>
-              <span>Se connecter</span>
-              <ArrowRight size={16} />
+              <span>Continuer</span>
+              <ArrowRight size={17} />
             </>
           )}
         </button>

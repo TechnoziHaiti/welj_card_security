@@ -108,13 +108,15 @@ export async function middleware(request: NextRequest) {
     if (reason !== 'inactivity') {
       const role = user.app_metadata?.role || user.user_metadata?.role || 'agent';
       const redirectToParam = request.nextUrl.searchParams.get('redirectTo');
-      if (redirectToParam) {
-        return NextResponse.redirect(new URL(redirectToParam, request.url));
-      }
-      if (role === 'agent') {
+      if (role === 'admin') {
+        if (redirectToParam && redirectToParam.startsWith('/admin')) {
+          return NextResponse.redirect(new URL(redirectToParam, request.url));
+        }
+        return NextResponse.redirect(new URL('/admin/dashboard', request.url));
+      } else {
+        // Agent de contrôle : va toujours directement au scanner de cartes
         return NextResponse.redirect(new URL('/verify', request.url));
       }
-      return NextResponse.redirect(new URL('/admin/dashboard', request.url));
     }
   }
 

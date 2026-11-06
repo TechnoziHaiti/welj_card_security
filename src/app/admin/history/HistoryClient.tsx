@@ -17,6 +17,10 @@ import {
   Loader2,
   AlertCircle,
   CheckCircle2,
+  UserCheck,
+  User,
+  Smartphone,
+  Monitor,
 } from 'lucide-react';
 import { StatusBadge } from '@/components/StatusBadge';
 import { formatDateTimeFr } from '@/lib/dates';
@@ -25,6 +29,104 @@ import { VerificationLog } from '@/types/database';
 interface Props {
   initialLogs: VerificationLog[];
   isAdmin?: boolean;
+}
+
+function parseScanSource(rawAgent: string | null) {
+  if (!rawAgent) {
+    return {
+      operator: null,
+      device: 'Poste de travail / Navigateur',
+      isMobile: false,
+    };
+  }
+
+  let operator: { name: string; role: string; email: string } | null = null;
+  let device = 'Poste de travail / Navigateur';
+  let isMobile = rawAgent.includes('Mobile') || rawAgent.includes('Android') || rawAgent.includes('iPhone');
+
+  // Format: "Compte: Woody Joseph (Agent de Contrôle - agent@welj-express.com) | Mozilla/5.0..."
+  if (rawAgent.startsWith('Compte: ')) {
+    const parts = rawAgent.split(' | ');
+    const opPart = parts[0].replace('Compte: ', '').trim();
+    const match = opPart.match(/^(.+?)\s*\((.+?)\s*-\s*(.+?)\)$/);
+    if (match) {
+      operator = {
+        name: match[1].trim(),
+        role: match[2].trim(),
+        email: match[3].trim(),
+      };
+    } else {
+      operator = { name: opPart, role: 'Opérateur', email: '' };
+    }
+
+    const browserPart = parts[1] || '';
+    if (browserPart.includes('Mobile') || browserPart.includes('Android') || browserPart.includes('iPhone')) {
+      device = 'Smartphone Mobile';
+      isMobile = true;
+    } else {
+      device = 'Poste de travail / PC';
+      isMobile = false;
+    }
+  } else if (rawAgent.startsWith('Contrôle Public Direct')) {
+    operator = null;
+    const parts = rawAgent.split(' | ');
+    const browserPart = parts[1] || '';
+    if (browserPart.includes('Mobile') || browserPart.includes('Android') || browserPart.includes('iPhone')) {
+      device = 'Smartphone (Public)';
+      isMobile = true;
+    } else {
+      device = 'Navigateur Public';
+      isMobile = false;
+    }
+  } else {
+    if (isMobile) {
+      device = 'Smartphone (Agent)';
+    } else {
+      device = 'Poste de travail';
+    }
+  }
+
+  return { operator, device, isMobile };
+}
+
+function getAccountTypeBadge(accountType?: string | null) {
+  if (!accountType) return null;
+  const lower = accountType.toLowerCase();
+
+  if (lower === 'platinum') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900 text-amber-300 border border-amber-400/40 shadow-sm">
+        <span>👑 Platinum</span>
+      </span>
+    );
+  }
+  if (lower === 'gold') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white shadow-sm">
+        <span>⭐ Gold</span>
+      </span>
+    );
+  }
+  if (lower === 'silver') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-600 text-white shadow-sm">
+        <span>🥈 Silver</span>
+      </span>
+    );
+  }
+  if (lower === 'bronze') {
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-800 text-white shadow-sm">
+        <span>🥉 Bronze</span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-slate-800 border border-stone-200">
+      <span>{accountType}</span>
+    </span>
+  );
 }
 
 export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
@@ -104,12 +206,16 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
         ? `${log.cards.members.first_name} ${log.cards.members.last_name}`.toLowerCase()
         : '';
       const memberCode = (log.cards?.members?.client_code || log.cards?.members?.member_code || '').toLowerCase();
+      const accountType = (log.cards?.members?.account_type || '').toLowerCase();
+      const agentRaw = (log.user_agent || '').toLowerCase();
       const hashLookup = log.token_hash_lookup?.toLowerCase() || '';
 
       return (
         cardRef.includes(q) ||
         memberName.includes(q) ||
         memberCode.includes(q) ||
+        accountType.includes(q) ||
+        agentRaw.includes(q) ||
         hashLookup.includes(q)
       );
     }
@@ -172,7 +278,7 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
           <Search size={16} className="absolute left-3.5 top-3 text-stone-400" />
           <input
             type="text"
-            placeholder="Rechercher par carte, membre, code membre ou hash de scan..."
+            placeholder="Rechercher par compte, titulaire, code client, type de formule (Platinum, Gold...), opérateur ou carte..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
@@ -229,78 +335,113 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
                   <th className="py-3.5 px-4">Date et Heure</th>
                   <th className="py-3.5 px-4">Résultat</th>
                   <th className="py-3.5 px-4">Carte Vérifiée</th>
-                  <th className="py-3.5 px-4">Titulaire Associé</th>
+                  <th className="py-3.5 px-4">Compte &amp; Titulaire Scanné</th>
+                  <th className="py-3.5 px-4">Compte Opérateur (Scanné par)</th>
                   <th className="py-3.5 px-4">Empreinte Cryptographique</th>
-                  <th className="py-3.5 px-4">Dispositif Agent</th>
                   {isAdmin && <th className="py-3.5 px-4 text-right">Actions</th>}
                 </tr>
               </thead>
               <tbody className="divide-y divide-stone-200 text-slate-800">
-                {filteredLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-stone-50 transition-colors">
-                    <td className="py-3 px-4 font-mono text-slate-600 whitespace-nowrap">
-                      {formatDateTimeFr(log.verified_at)}
-                    </td>
-                    <td className="py-3 px-4">
-                      <StatusBadge status={log.result} size="sm" />
-                    </td>
-                    <td className="py-3 px-4">
-                      {log.cards ? (
-                        <span className="font-mono font-bold text-emerald-600 block">
-                          {log.cards.card_identifier}
-                        </span>
-                      ) : (
-                        <span className="text-stone-400 italic text-[11px]">
-                          Token inconnu
-                        </span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4">
-                      {log.cards?.members ? (
-                        <Link
-                          href={`/admin/members/${log.cards.members.id}`}
-                          className="hover:text-emerald-600 transition-colors block"
-                        >
-                          <span className="font-semibold text-slate-900 hover:text-emerald-600 block">
-                            {log.cards.members.first_name} {log.cards.members.last_name}
-                          </span>
-                          <span className="text-[10px] text-slate-500 font-mono">
-                            {log.cards.members.client_code || log.cards.members.member_code}
-                          </span>
-                        </Link>
-                      ) : (
-                        <span className="text-stone-400 italic text-[11px]">-</span>
-                      )}
-                    </td>
-                    <td className="py-3 px-4 font-mono text-[10px] text-slate-500 max-w-xs truncate" title={log.token_hash_lookup}>
-                      {log.token_hash_lookup.substring(0, 18)}...
-                    </td>
-                    <td className="py-3 px-4 text-slate-500 max-w-xs truncate text-[11px]" title={log.user_agent || ''}>
-                      {log.user_agent ? (
-                        log.user_agent.includes('Mobile') ? 'Smartphone (Agent)' : 'Poste de travail / Navigateur'
-                      ) : (
-                        'Inconnu'
-                      )}
-                    </td>
-                    {isAdmin && (
-                      <td className="py-3 px-4 text-right whitespace-nowrap">
-                        <button
-                          onClick={() => handleDeleteLog(log.id)}
-                          disabled={deletingId === log.id || clearingAll}
-                          className="inline-flex items-center justify-center p-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white transition-all shadow-sm disabled:opacity-50 cursor-pointer"
-                          title="Supprimer cet enregistrement"
-                          aria-label="Supprimer cet enregistrement"
-                        >
-                          {deletingId === log.id ? (
-                            <Loader2 size={15} className="animate-spin text-white" />
-                          ) : (
-                            <Trash2 size={15} className="text-white" />
-                          )}
-                        </button>
+                {filteredLogs.map((log) => {
+                  const { operator, device, isMobile } = parseScanSource(log.user_agent);
+
+                  return (
+                    <tr key={log.id} className="hover:bg-stone-50 transition-colors">
+                      <td className="py-3 px-4 font-mono text-slate-600 whitespace-nowrap">
+                        {formatDateTimeFr(log.verified_at)}
                       </td>
-                    )}
-                  </tr>
-                ))}
+                      <td className="py-3 px-4">
+                        <StatusBadge status={log.result} size="sm" />
+                      </td>
+                      <td className="py-3 px-4">
+                        {log.cards ? (
+                          <span className="font-mono font-bold text-emerald-600 block">
+                            {log.cards.card_identifier}
+                          </span>
+                        ) : (
+                          <span className="text-stone-400 italic text-[11px]">
+                            Token inconnu
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {log.cards?.members ? (
+                          <Link
+                            href={`/admin/members/${log.cards.members.id}`}
+                            className="hover:text-emerald-600 transition-colors block group"
+                          >
+                            <div className="flex items-center gap-1.5 mb-0.5">
+                              {getAccountTypeBadge(log.cards.members.account_type)}
+                              <span className="font-mono font-bold text-[11px] text-emerald-700">
+                                {log.cards.members.client_code || log.cards.members.member_code}
+                              </span>
+                            </div>
+                            <span className="font-semibold text-slate-900 group-hover:text-emerald-600 block leading-tight">
+                              {log.cards.members.first_name} {log.cards.members.last_name}
+                            </span>
+                          </Link>
+                        ) : (
+                          <span className="text-stone-400 italic text-[11px]">
+                            Aucun compte rattaché
+                          </span>
+                        )}
+                      </td>
+                      <td className="py-3 px-4">
+                        {operator ? (
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1.5 font-bold text-slate-900">
+                              <UserCheck size={13} className="text-emerald-600 shrink-0" />
+                              <span>{operator.name}</span>
+                              <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                {operator.role}
+                              </span>
+                            </div>
+                            {operator.email && (
+                              <p className="text-[10px] text-slate-500 font-mono pl-4">
+                                {operator.email}
+                              </p>
+                            )}
+                            <div className="flex items-center gap-1 text-[10px] text-slate-400 pl-4">
+                              {isMobile ? <Smartphone size={10} /> : <Monitor size={10} />}
+                              <span>{device}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="space-y-0.5">
+                            <div className="flex items-center gap-1 text-slate-700 font-semibold">
+                              <Globe size={13} className="text-slate-400 shrink-0" />
+                              <span>Contrôle Direct (Public)</span>
+                            </div>
+                            <div className="flex items-center gap-1 text-[10px] text-slate-400 pl-4">
+                              {isMobile ? <Smartphone size={10} /> : <Monitor size={10} />}
+                              <span>{device}</span>
+                            </div>
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 font-mono text-[10px] text-slate-500 max-w-xs truncate" title={log.token_hash_lookup}>
+                        {log.token_hash_lookup.substring(0, 16)}...
+                      </td>
+                      {isAdmin && (
+                        <td className="py-3 px-4 text-right whitespace-nowrap">
+                          <button
+                            onClick={() => handleDeleteLog(log.id)}
+                            disabled={deletingId === log.id || clearingAll}
+                            className="inline-flex items-center justify-center p-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+                            title="Supprimer cet enregistrement"
+                            aria-label="Supprimer cet enregistrement"
+                          >
+                            {deletingId === log.id ? (
+                              <Loader2 size={15} className="animate-spin text-white" />
+                            ) : (
+                              <Trash2 size={15} className="text-white" />
+                            )}
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
