@@ -203,15 +203,7 @@ export default function PublicVerifyPage() {
     const trimmed = raw.trim();
 
     // Cas 1 : Lien officiel de vérification Welj contenant "/verify/"
-    const isWeljDomain =
-      trimmed.startsWith('/') ||
-      trimmed.includes('localhost') ||
-      trimmed.includes('127.0.0.1') ||
-      trimmed.includes('192.168.') ||
-      trimmed.includes('weljcard') ||
-      trimmed.includes('welj');
-
-    if (isWeljDomain && trimmed.includes('/verify/')) {
+    if (trimmed.includes('/verify/')) {
       const parts = trimmed.split('/verify/');
       const tokenCandidate = parts[parts.length - 1].split('?')[0].split('#')[0].trim();
       if (tokenCandidate) {
@@ -722,7 +714,7 @@ export default function PublicVerifyPage() {
   if (authChecking) {
     return (
       <main className="min-h-screen bg-[#010101] flex flex-col items-center justify-center p-6 text-white font-sans">
-        <Loader2 size={36} className="animate-spin text-blue-500 mb-3" />
+        <Loader2 size={36} className="animate-spin text-emerald-500 mb-3" />
         <p className="text-xs text-slate-400 font-medium">Vérification de l&apos;accès au scanner...</p>
       </main>
     );
@@ -731,17 +723,9 @@ export default function PublicVerifyPage() {
   return (
     <main
       className={`min-h-screen relative overflow-hidden flex flex-col items-center justify-center p-3 sm:p-6 font-sans transition-colors duration-300 ${
-        screenTorch ? 'bg-white text-slate-900' : 'bg-[#010101] text-white selection:bg-blue-600 selection:text-white'
+        screenTorch ? 'bg-white text-slate-900' : 'bg-[#010101] text-white selection:bg-emerald-600 selection:text-white'
       }`}
     >
-      {/* Halo lumineux ambiant bleu nuit / noir (désactivé en mode torche) */}
-      {!screenTorch && (
-        <>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[700px] h-[380px] bg-gradient-to-b from-blue-600/20 via-blue-900/10 to-transparent blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 left-1/2 -translate-x-1/2 w-[750px] h-[350px] bg-gradient-to-t from-blue-950/25 to-transparent blur-3xl pointer-events-none" />
-        </>
-      )}
-
       {/* Conteneur caché pour le décodage d'image importée */}
       <div id="qr-file-detector" className="hidden" />
 
@@ -770,7 +754,7 @@ export default function PublicVerifyPage() {
                 <button
                   type="button"
                   onClick={handleToggleZoom}
-                  className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-blue-600/30 hover:bg-blue-600/50 text-blue-200 border border-blue-500/40 text-[11px] font-bold transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 text-[11px] font-bold transition-all cursor-pointer"
                   title="Agrandir le QR Code (1x, 2x, 3x) pour éviter d'approcher la carte trop près"
                 >
                   <ZoomIn size={12} />
@@ -795,7 +779,7 @@ export default function PublicVerifyPage() {
                   <button
                     type="button"
                     onClick={handleSwitchCamera}
-                    className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-blue-300 hover:text-white border border-slate-700 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-emerald-300 hover:text-white border border-slate-700 transition-colors cursor-pointer"
                     title="Changer de caméra"
                   >
                     <SwitchCamera size={13} />
@@ -809,8 +793,8 @@ export default function PublicVerifyPage() {
             <div className="relative rounded-2xl overflow-hidden border border-slate-700/80 bg-black min-h-[260px] sm:min-h-[290px] flex items-center justify-center shadow-inner">
               {cameraLoading && (
                 <div className="absolute inset-0 z-20 bg-slate-950/95 flex flex-col items-center justify-center gap-3 text-white">
-                  <Loader2 size={34} className="animate-spin text-blue-400" />
-                  <span className="text-xs font-semibold text-blue-200">
+                  <Loader2 size={34} className="animate-spin text-emerald-400" />
+                  <span className="text-xs font-semibold text-emerald-200">
                     Activation automatique de la caméra...
                   </span>
                 </div>
@@ -819,11 +803,11 @@ export default function PublicVerifyPage() {
               {/* Overlay de détection immédiate dès qu'un code est lu */}
               {processingScan && (
                 <div className="absolute inset-0 z-30 bg-black/90 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center animate-in fade-in duration-150">
-                  <div className="w-14 h-14 rounded-full bg-blue-500/20 border border-blue-400 flex items-center justify-center mb-3">
-                    <Loader2 size={28} className="animate-spin text-blue-400" />
+                  <div className="w-14 h-14 rounded-full bg-emerald-500/20 border border-emerald-400 flex items-center justify-center mb-3">
+                    <Loader2 size={28} className="animate-spin text-emerald-400" />
                   </div>
                   <p className="text-sm font-bold text-white mb-1">QR Code détecté !</p>
-                  <p className="text-xs text-blue-200">Vérification de la carte en cours...</p>
+                  <p className="text-xs text-emerald-200">Vérification de la carte en cours...</p>
                 </div>
               )}
 
@@ -833,12 +817,12 @@ export default function PublicVerifyPage() {
               {/* Cadre de visée dynamique centré */}
               {!cameraLoading && !processingScan && (
                 <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center p-4">
-                  <div className="w-40 h-40 sm:w-44 sm:h-44 border-2 border-blue-400/50 rounded-2xl relative shadow-[0_0_20px_rgba(59,130,246,0.3)]">
+                  <div className="w-40 h-40 sm:w-44 sm:h-44 border-2 border-emerald-500/50 rounded-2xl relative shadow-[0_0_20px_rgba(22,163,74,0.3)]">
                     {/* 4 coins de visée fluorescents */}
-                    <div className="absolute -top-1 -left-1 w-5 h-5 border-t-4 border-l-4 border-blue-400 rounded-tl-lg" />
-                    <div className="absolute -top-1 -right-1 w-5 h-5 border-t-4 border-r-4 border-blue-400 rounded-tr-lg" />
-                    <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-4 border-l-4 border-blue-400 rounded-bl-lg" />
-                    <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-4 border-r-4 border-blue-400 rounded-br-lg" />
+                    <div className="absolute -top-1 -left-1 w-5 h-5 border-t-4 border-l-4 border-emerald-400 rounded-tl-lg" />
+                    <div className="absolute -top-1 -right-1 w-5 h-5 border-t-4 border-r-4 border-emerald-400 rounded-tr-lg" />
+                    <div className="absolute -bottom-1 -left-1 w-5 h-5 border-b-4 border-l-4 border-emerald-400 rounded-bl-lg" />
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 border-b-4 border-r-4 border-emerald-400 rounded-br-lg" />
 
                     {/* Laser de scan animé centré dans le viseur */}
                     <div className="laser-fluorescent-bar" />
@@ -866,9 +850,9 @@ export default function PublicVerifyPage() {
                 className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs font-semibold text-slate-200 transition-colors cursor-pointer disabled:opacity-50"
               >
                 {fileScanning ? (
-                  <Loader2 size={13} className="animate-spin text-blue-400" />
+                  <Loader2 size={13} className="animate-spin text-emerald-400" />
                 ) : (
-                  <Upload size={13} className="text-blue-400" />
+                  <Upload size={13} className="text-emerald-400" />
                 )}
                 <span>{fileScanning ? 'Analyse image...' : 'Importer photo QR'}</span>
               </button>
@@ -885,7 +869,7 @@ export default function PublicVerifyPage() {
                     }
                     setIsScanning(true);
                   }}
-                  className="inline-flex items-center gap-1.5 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-500 text-xs font-semibold text-white transition-colors cursor-pointer"
+                  className="inline-flex items-center gap-1.5 py-2.5 px-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-xs font-semibold text-white transition-colors cursor-pointer"
                 >
                   <RefreshCw size={13} />
                   <span>Relancer</span>
@@ -901,13 +885,13 @@ export default function PublicVerifyPage() {
                   placeholder="Ou collez un lien / code ici..."
                   value={manualInput}
                   onChange={(e) => setManualInput(e.target.value)}
-                  className="w-full pl-3 pr-2 py-2 text-xs bg-slate-900/90 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500 font-mono"
+                  className="w-full pl-3 pr-2 py-2 text-xs bg-slate-900/90 border border-slate-700 rounded-xl text-white placeholder:text-slate-500 focus:outline-none focus:ring-1 focus:ring-emerald-500 font-mono"
                 />
               </div>
               <button
                 type="submit"
                 disabled={!manualInput.trim() || processingScan}
-                className="px-3.5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"
+                className="px-3.5 py-2 bg-[#16a34a] hover:bg-[#15803d] disabled:opacity-40 text-white rounded-xl text-xs font-bold transition-colors cursor-pointer shrink-0"
               >
                 Vérifier
               </button>

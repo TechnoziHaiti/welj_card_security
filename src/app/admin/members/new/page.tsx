@@ -238,7 +238,7 @@ export default function NewMemberPage() {
         <form onSubmit={handleSubmit} className="space-y-7">
           {/* Section 1 : Identité Civile */}
           <div className="space-y-4">
-            <h2 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
+            <h2 className="text-xs font-bold text-emerald-700 uppercase tracking-widest flex items-center gap-2">
               <User size={15} />
               <span>1. Identité du Titulaire</span>
             </h2>
@@ -258,7 +258,7 @@ export default function NewMemberPage() {
                   placeholder="Ex: Dupont"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
-                  className="w-full px-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                 />
               </div>
 
@@ -276,7 +276,7 @@ export default function NewMemberPage() {
                   placeholder="Ex: Jean-Marc"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
-                  className="w-full px-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                  className="w-full px-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
                 />
               </div>
             </div>
@@ -284,7 +284,7 @@ export default function NewMemberPage() {
 
           {/* Section 2 : Code Client */}
           <div className="space-y-4 pt-3 border-t border-stone-200">
-            <h2 className="text-xs font-bold text-blue-600 uppercase tracking-widest flex items-center gap-2">
+            <h2 className="text-xs font-bold text-emerald-700 uppercase tracking-widest flex items-center gap-2">
               <KeyRound size={15} />
               <span>2. Code Client</span>
             </h2>
@@ -305,7 +305,7 @@ export default function NewMemberPage() {
                   placeholder="Ex: CL-9824 ou RP861950"
                   value={clientCode}
                   onChange={(e) => setClientCode(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none font-mono transition-all"
+                  className="w-full pl-10 pr-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none font-mono transition-all"
                 />
               </div>
               <p className="text-[11px] text-slate-500 mt-1.5">
@@ -327,7 +327,7 @@ export default function NewMemberPage() {
                 id="accountType"
                 value={accountType}
                 onChange={(e) => setAccountType(e.target.value as AccountType)}
-                className="w-full px-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                className="w-full px-4 py-3 text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all"
               >
                 <option value="Platinum">Platinum</option>
                 <option value="Gold">Gold</option>
@@ -340,7 +340,7 @@ export default function NewMemberPage() {
           {/* Section 4 : Paramètres de la Carte Welj */}
           <div className="p-5 sm:p-6 rounded-2xl bg-stone-50 border border-stone-200 space-y-5">
             <div className="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider">
-              <Calendar size={16} className="text-blue-600" />
+              <Calendar size={16} className="text-emerald-600" />
               <span>Paramètres de la Carte Welj (Validité 1 an)</span>
             </div>
 
@@ -358,7 +358,7 @@ export default function NewMemberPage() {
                   required
                   value={creationDate}
                   onChange={(e) => handleCreationDateChange(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-900"
+                  className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-slate-900"
                 />
               </div>
 
@@ -375,7 +375,7 @@ export default function NewMemberPage() {
                   required
                   value={expirationDate}
                   onChange={(e) => setExpirationDate(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none bg-white font-bold text-blue-700"
+                  className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white font-bold text-emerald-700"
                 />
               </div>
             </div>
@@ -385,7 +385,7 @@ export default function NewMemberPage() {
                 type="checkbox"
                 checked={createCardNow}
                 onChange={(e) => setCreateCardNow(e.target.checked)}
-                className="mt-0.5 w-4 h-4 text-blue-600 rounded border-stone-300 focus:ring-blue-500 bg-white"
+                className="mt-0.5 w-4 h-4 text-emerald-600 rounded border-stone-300 focus:ring-emerald-500 bg-white"
               />
               <div className="text-xs">
                 <span className="font-bold text-slate-900 block">
@@ -399,8 +399,8 @@ export default function NewMemberPage() {
           </div>
 
           {/* Notice Confidentialité */}
-          <div className="p-4 rounded-xl bg-blue-50 border border-blue-200 text-slate-700 text-xs flex items-start gap-2.5">
-            <ShieldCheck size={18} className="text-blue-600 shrink-0 mt-0.5" />
+          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-slate-700 text-xs flex items-start gap-2.5">
+            <ShieldCheck size={18} className="text-emerald-600 shrink-0 mt-0.5" />
             <span>
               <strong>Sécurité &amp; Confidentialité :</strong> Aucune photo n&apos;est enregistrée. La carte est liée au QR Code et protégée par un code de sécurité dynamique en direct (30 min) lors des contrôles.
             </span>
@@ -425,7 +425,7 @@ export default function NewMemberPage() {
             <button
               type="submit"
               disabled={loading}
-              className="inline-flex items-center gap-2 px-7 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm disabled:opacity-60 cursor-pointer"
+              className="inline-flex items-center gap-2 px-7 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold transition-all shadow-sm disabled:opacity-60 cursor-pointer"
             >
               {loading ? (
                 <>

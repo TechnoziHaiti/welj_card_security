@@ -1,7 +1,7 @@
 export type AccountType = 'Platinum' | 'Gold' | 'Silver' | 'Bronze' | 'Standard' | 'Premium' | 'VIP' | 'Entreprise';
 export type MemberStatus = 'actif' | 'inactif' | 'suspendu';
 export type CardStatus = 'active' | 'expiree' | 'revoquee' | 'en_attente';
-export type VerificationResultType = 'valide' | 'expiree' | 'revoquee' | 'inconnue';
+export type VerificationResultType = 'valide' | 'expiree' | 'revoquee' | 'desactive' | 'suspendu' | 'inconnue';
 export type UserRole = 'admin' | 'agent';
 
 export interface Profile {

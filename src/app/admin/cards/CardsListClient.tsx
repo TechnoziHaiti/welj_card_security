@@ -192,6 +192,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
     // Filtre statut calculé dynamiquement
     if (statusFilter === 'active' && effectiveStatus !== 'active') return false;
     if (statusFilter === 'expiree' && effectiveStatus !== 'expiree') return false;
+    if (statusFilter === 'suspendu' && effectiveStatus !== 'suspendu') return false;
     if (statusFilter === 'revoquee' && effectiveStatus !== 'revoquee') return false;
     if (statusFilter === 'expiring' && (effectiveStatus !== 'active' || !isExpiringSoon(c.expires_at, 30))) return false;
 
@@ -245,7 +246,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
             placeholder="Rechercher par identifiant carte, nom du membre ou code membre..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
           />
         </div>
 
@@ -259,6 +260,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
             { id: 'all', label: 'Toutes' },
             { id: 'active', label: 'Actives' },
             { id: 'expiree', label: 'Expirées' },
+            { id: 'suspendu', label: 'Suspendues' },
             { id: 'revoquee', label: 'Révoquées' },
             { id: 'expiring', label: 'Exp. < 30j' },
           ].map((tab) => (
@@ -267,7 +269,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
               onClick={() => setStatusFilter(tab.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 statusFilter === tab.id
-                  ? 'bg-blue-600 text-white font-semibold'
+                  ? 'bg-[#16a34a] text-white font-semibold shadow-sm'
                   : 'bg-stone-100 text-slate-700 hover:bg-stone-200 border border-stone-300'
               }`}
             >
@@ -306,7 +308,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
 
                   return (
                     <tr key={card.id} className="hover:bg-stone-50 transition-colors">
-                      <td className="py-3 px-4 font-mono font-bold text-blue-600">
+                      <td className="py-3 px-4 font-mono font-bold text-emerald-600">
                         {card.card_identifier}
                       </td>
                       <td className="py-3 px-4">
@@ -315,7 +317,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                             href={`/admin/members/${card.members.id}`}
                             className="group block"
                           >
-                            <span className="font-bold text-slate-900 group-hover:text-blue-600 transition-colors block">
+                            <span className="font-bold text-slate-900 group-hover:text-emerald-600 transition-colors block">
                               {card.members.first_name} {card.members.last_name}
                             </span>
                             <span className="text-[11px] text-slate-500 font-mono">
@@ -330,7 +332,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                         <div className="flex items-center gap-2">
                           <StatusBadge status={effectiveStatus} size="sm" />
                           {expiringSoon && effectiveStatus === 'active' && (
-                            <span className="text-[10px] font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                            <span className="text-[10px] font-bold text-white bg-amber-500 px-2 py-0.5 rounded shadow-sm">
                               Bientôt
                             </span>
                           )}
@@ -352,7 +354,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                             setRawModalToken(null);
                             setShowQrModal(true);
                           }}
-                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-transparent hover:bg-stone-100 text-blue-600 font-semibold text-[11px] border border-blue-300 transition-colors shadow-sm"
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-transparent hover:bg-emerald-50 text-emerald-700 font-semibold text-[11px] border border-emerald-300 transition-colors shadow-sm"
                           title="Télécharger QR Code"
                         >
                           <QrCode size={13} />
@@ -388,7 +390,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                               <button
                                 onClick={() => handleRenew(card)}
                                 disabled={actionLoading}
-                                className="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-semibold transition-colors flex items-center gap-1 shadow-sm"
+                                className="px-2.5 py-1.5 rounded-lg bg-[#16a34a] hover:bg-[#15803d] text-white text-[11px] font-semibold transition-colors flex items-center gap-1 shadow-sm"
                               >
                                 <RefreshCw size={12} />
                                 <span>Renouveler</span>

@@ -89,7 +89,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
         {isAdmin ? (
           <Link
             href="/admin/members/new"
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm self-start sm:self-auto"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs transition-colors shadow-sm self-start sm:self-auto"
           >
             <UserPlus size={15} />
             <span>Ajouter un Membre</span>
@@ -111,7 +111,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
               name="q"
               defaultValue={q || ''}
               placeholder="Rechercher par nom, prénom ou code client..."
-              className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+              className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
             />
           </div>
           <button
@@ -122,8 +122,8 @@ export default async function MembersListPage({ searchParams }: PageProps) {
           </button>
         </form>
 
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-1.5 text-xs text-slate-600">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 sm:pb-0">
+          <div className="flex items-center gap-1.5 text-xs text-slate-600 shrink-0">
             <Filter size={14} />
             <span>Filtres :</span>
           </div>
@@ -132,7 +132,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
             href="/admin/members"
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               !status && !account_type
-                ? 'bg-blue-600 text-white font-semibold'
+                ? 'bg-[#16a34a] text-white font-semibold'
                 : 'bg-stone-100 text-slate-700 hover:bg-stone-200 border border-stone-300'
             }`}
           >
@@ -142,7 +142,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
             href="/admin/members?status=actif"
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               status === 'actif'
-                ? 'bg-blue-600 text-white font-semibold'
+                ? 'bg-[#16a34a] text-white font-semibold'
                 : 'bg-stone-100 text-slate-700 hover:bg-stone-200 border border-stone-300'
             }`}
           >
@@ -152,7 +152,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
             href="/admin/members?status=inactif"
             className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
               status === 'inactif'
-                ? 'bg-blue-600 text-white font-semibold'
+                ? 'bg-[#16a34a] text-white font-semibold'
                 : 'bg-stone-100 text-slate-700 hover:bg-stone-200 border border-stone-300'
             }`}
           >
@@ -176,7 +176,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
               <div className="mt-4">
                 <Link
                   href="/admin/members/new"
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-xl shadow-sm transition-colors"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-semibold rounded-xl shadow-sm transition-colors"
                 >
                   <UserPlus size={14} />
                   <span>Nouveau Membre</span>
@@ -207,7 +207,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
                       key={member.id}
                       className="hover:bg-stone-50 transition-colors group"
                     >
-                      <td className="py-3 px-4 font-mono font-bold text-blue-600">
+                      <td className="py-3 px-4 font-mono font-bold text-emerald-600">
                         {member.client_code || member.member_code}
                       </td>
                       <td className="py-3 px-4">
@@ -222,7 +222,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
                       </td>
                       <td className="py-3 px-4">
                         {activeCard ? (
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-blue-600">
+                          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-emerald-600">
                             <CreditCard size={13} />
                             {activeCard.card_identifier}
                           </span>

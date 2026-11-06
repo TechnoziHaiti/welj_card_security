@@ -364,7 +364,14 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
     }
   };
 
-  const activeCard = cards.find((c) => getEffectiveCardStatus(c) === 'active');
+  // Carte officielle du membre (active, suspendue, désactivée ou la plus récente)
+  const activeCard =
+    cards.find((c) => {
+      const s = getEffectiveCardStatus(c, member);
+      return s === 'active' || s === 'suspendu' || s === 'inactif';
+    }) ||
+    cards.find((c) => getEffectiveCardStatus(c, member) === 'expiree') ||
+    cards[0];
   const [cardQrDataUrl, setCardQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
@@ -397,7 +404,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
               <StatusBadge status={member.status} size="sm" />
             </div>
             <p className="text-xs text-slate-600 font-mono mt-0.5">
-              Code Client : <span className="font-bold text-blue-600">{member.client_code || member.member_code}</span> &bull; Adhérent depuis le {formatDateFr(member.created_at)}
+              Code Client : <span className="font-bold text-emerald-600">{member.client_code || member.member_code}</span> &bull; Adhérent depuis le {formatDateFr(member.created_at)}
             </p>
           </div>
         </div>
@@ -432,13 +439,13 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
         <div className="bg-white rounded-2xl border border-stone-300/80 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-              <User size={16} className="text-blue-600" />
+              <User size={16} className="text-emerald-600" />
               Informations du Membre
             </h2>
             {isAdmin && (!isEditing ? (
               <button
                 onClick={() => setIsEditing(true)}
-                className="p-1.5 rounded-lg text-stone-400 hover:text-blue-600 hover:bg-stone-100 transition-colors"
+                className="p-1.5 rounded-lg text-stone-400 hover:text-emerald-600 hover:bg-stone-100 transition-colors"
                 title="Modifier"
               >
                 <Edit2 size={15} />
@@ -460,7 +467,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
                   Code Client
                 </span>
-                <span className="font-mono font-bold text-blue-600 text-sm mt-0.5 block">
+                <span className="font-mono font-bold text-emerald-600 text-sm mt-0.5 block">
                   {member.client_code || member.member_code}
                 </span>
                 <span className="text-[10px] text-slate-500">
@@ -500,16 +507,8 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                   <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-2">
                     Actions sur le compte
                   </span>
-                  <div className="flex gap-2">
-                    {member.status === 'actif' ? (
-                      <button
-                        onClick={() => handleToggleMemberStatus('inactif')}
-                        disabled={actionLoading}
-                        className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold text-[11px] shadow-sm border border-amber-500 transition-colors"
-                      >
-                        Désactiver le compte
-                      </button>
-                    ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {member.status === 'inactif' ? (
                       <button
                         onClick={() => handleToggleMemberStatus('actif')}
                         disabled={actionLoading}
@@ -517,16 +516,33 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                       >
                         Réactiver le compte
                       </button>
-                    )}
-
-                    {member.status !== 'suspendu' && (
+                    ) : member.status === 'suspendu' ? (
                       <button
-                        onClick={() => handleToggleMemberStatus('suspendu')}
+                        onClick={() => handleToggleMemberStatus('actif')}
                         disabled={actionLoading}
-                        className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-[11px] shadow-sm border border-red-600 transition-colors"
+                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-[11px] shadow-sm border border-emerald-600 transition-colors"
                       >
-                        Suspendre
+                        Lever la suspension
                       </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => handleToggleMemberStatus('inactif')}
+                          disabled={actionLoading}
+                          className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold text-[11px] shadow-sm border border-amber-500 transition-colors"
+                          title="Pour carte perdue ou mise en veille administrative"
+                        >
+                          Désactiver le compte
+                        </button>
+                        <button
+                          onClick={() => handleToggleMemberStatus('suspendu')}
+                          disabled={actionLoading}
+                          className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-[11px] shadow-sm border border-red-600 transition-colors"
+                          title="En cas de fraude, enquête ou litige"
+                        >
+                          Suspendre
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
@@ -543,7 +559,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                   required
                   value={editClientCode}
                   onChange={(e) => setEditClientCode(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none font-mono"
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none font-mono"
                 />
               </div>
 
@@ -556,7 +572,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                   required
                   value={editLastName}
                   onChange={(e) => setEditLastName(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
 
@@ -569,7 +585,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                   required
                   value={editFirstName}
                   onChange={(e) => setEditFirstName(e.target.value)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
               </div>
 
@@ -580,7 +596,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                 <select
                   value={editAccountType}
                   onChange={(e) => setEditAccountType(e.target.value as AccountType)}
-                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
                 >
                   <option value="Platinum">Platinum</option>
                   <option value="Gold">Gold</option>
@@ -593,7 +609,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                 <button
                   type="submit"
                   disabled={savingEdit}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold transition-colors disabled:opacity-60 shadow-sm"
+                  className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white rounded-xl font-semibold transition-colors disabled:opacity-60 shadow-sm"
                 >
                   {savingEdit ? <Loader2 size={13} className="animate-spin" /> : <Save size={13} />}
                   <span>Enregistrer</span>
@@ -615,8 +631,8 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
           {/* Carte Actuelle */}
           <div className="bg-white rounded-2xl border border-stone-300/80 shadow-sm p-6">
             <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 mb-4">
-              <CreditCard size={16} className="text-blue-600" />
-              Carte Active Actuelle
+              <CreditCard size={16} className="text-emerald-600" />
+              Carte Officielle du Membre
             </h2>
 
             {activeCard ? (
@@ -625,7 +641,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                 <div className="relative w-full max-w-[480px] mx-auto bg-white rounded-2xl shadow-xl border border-stone-200/90 overflow-hidden">
                   {/* Badge de statut discret en haut à droite */}
                   <div className="absolute top-3 right-3 z-10">
-                    <StatusBadge status={getEffectiveCardStatus(activeCard)} size="sm" />
+                    <StatusBadge status={getEffectiveCardStatus(activeCard, member)} size="sm" />
                   </div>
 
                   {/* En-tête officiel : Logo Welj | MEMBERSHIP + Formule */}
@@ -731,7 +747,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                     }}
                     className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-stone-50 text-slate-700 font-semibold text-xs transition-colors border border-stone-300 shadow-sm"
                   >
-                    <QrCode size={14} className="text-blue-600" />
+                    <QrCode size={14} className="text-emerald-600" />
                     <span>Agrandir / Télécharger le QR</span>
                   </button>
 
@@ -740,7 +756,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                       <button
                         onClick={() => handleRenewCard(activeCard)}
                         disabled={actionLoading || member.status !== 'actif'}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
                       >
                         <RefreshCw size={14} />
                         <span>Renouveler la carte (1 an)</span>
@@ -767,7 +783,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                   <button
                     onClick={handleCreateNewCard}
                     disabled={actionLoading || member.status !== 'actif'}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50"
                   >
                     <PlusCircle size={15} />
                     <span>Émettre une carte maintenant</span>
@@ -801,11 +817,11 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                   <tbody className="divide-y divide-stone-200 text-slate-800">
                     {cards.map((card) => (
                       <tr key={card.id} className="hover:bg-stone-50">
-                        <td className="py-2.5 px-3 font-mono font-bold text-blue-600">
+                        <td className="py-2.5 px-3 font-mono font-bold text-emerald-600">
                           {card.card_identifier}
                         </td>
                         <td className="py-2.5 px-3">
-                          <StatusBadge status={getEffectiveCardStatus(card)} size="sm" />
+                          <StatusBadge status={getEffectiveCardStatus(card, member)} size="sm" />
                         </td>
                         <td className="py-2.5 px-3 text-slate-500">
                           {formatDateFr(card.created_at)}

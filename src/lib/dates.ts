@@ -36,15 +36,31 @@ export function isCardExpired(expiresAt: string | Date): boolean {
 
 /**
  * Calcule dynamiquement le statut officiel effectif d'une carte :
- * - Si le statut est "revoquee", la révocation est permanente.
+ * - Si le statut de la carte est "revoquee", la révocation est permanente.
+ * - Si le membre rattaché ou la carte est suspendu, la carte affiche "suspendu".
+ * - Si le membre rattaché ou la carte est inactif/désactivé, la carte affiche "inactif".
  * - Si la date d'expiration est dépassée (now > expires_at), la carte est "expiree".
  * - Sinon la carte est "active".
  */
-export function getEffectiveCardStatus(card: {
-  status?: string | null;
-  expires_at: string | Date;
-}): 'active' | 'expiree' | 'revoquee' | 'en_attente' {
+export function getEffectiveCardStatus(
+  card: {
+    status?: string | null;
+    expires_at: string | Date;
+    members?: { status?: string | null } | null;
+  },
+  memberOverride?: { status?: string | null } | null
+): 'active' | 'expiree' | 'revoquee' | 'suspendu' | 'inactif' | 'en_attente' {
   if (card.status === 'revoquee') return 'revoquee';
+
+  const memberStatus = memberOverride?.status || card.members?.status;
+  if (card.status === 'suspendu' || card.status === 'suspendue' || memberStatus === 'suspendu') {
+    return 'suspendu';
+  }
+
+  if (card.status === 'inactif' || card.status === 'desactive' || memberStatus === 'inactif') {
+    return 'inactif';
+  }
+
   if (card.status === 'en_attente') return 'en_attente';
   if (isCardExpired(card.expires_at) || card.status === 'expiree') return 'expiree';
   return 'active';

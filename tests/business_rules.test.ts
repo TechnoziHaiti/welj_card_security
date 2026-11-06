@@ -83,6 +83,10 @@ test('2. Règle Métier d\'Expiration (1 an à 23:59:59)', async (t) => {
     // Révocation permanente
     assert.equal(getEffectiveCardStatus({ status: 'revoquee', expires_at: pastDate }), 'revoquee', 'Carte révoquée reste révoquée');
     assert.equal(getEffectiveCardStatus({ status: 'revoquee', expires_at: futureDate }), 'revoquee', 'Carte révoquée reste révoquée');
+
+    // Statut suspendu hérité du membre ou direct sur la carte
+    assert.equal(getEffectiveCardStatus({ status: 'active', expires_at: futureDate, members: { status: 'suspendu' } }), 'suspendu', 'Membre suspendu => carte suspendue');
+    assert.equal(getEffectiveCardStatus({ status: 'active', expires_at: futureDate, members: { status: 'inactif' } }), 'inactif', 'Membre inactif => carte inactive');
   });
 });
 

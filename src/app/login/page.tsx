@@ -79,7 +79,7 @@ function LoginForm() {
   return (
     <form className="space-y-5" onSubmit={handleLogin}>
       {isScanningTarget && (
-        <div className="rounded-xl border border-blue-500/30 p-3.5 text-blue-300 text-xs font-medium text-center bg-transparent">
+        <div className="rounded-xl border border-emerald-500/30 p-3.5 text-emerald-300 text-xs font-medium text-center bg-transparent">
           Authentification requise pour activer et utiliser le scanner de cartes.
         </div>
       )}
@@ -104,7 +104,7 @@ function LoginForm() {
             placeholder="utilisateur@welj-express.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="block w-full pl-10 pr-3.5 py-2.5 text-sm bg-black border border-slate-800 rounded-xl text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all [color-scheme:dark]"
+            className="block w-full pl-10 pr-3.5 py-2.5 text-sm bg-black border border-slate-800 rounded-xl text-white placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all [color-scheme:dark]"
           />
         </div>
       </div>
@@ -129,7 +129,7 @@ function LoginForm() {
             placeholder="••••••••••••"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="block w-full pl-10 pr-3.5 py-2.5 text-sm bg-black border border-slate-800 rounded-xl text-white placeholder:text-slate-500 focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all [color-scheme:dark]"
+            className="block w-full pl-10 pr-3.5 py-2.5 text-sm bg-black border border-slate-800 rounded-xl text-white placeholder:text-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all [color-scheme:dark]"
           />
         </div>
       </div>
@@ -145,7 +145,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-blue-950/50 text-sm font-bold text-white bg-blue-600 hover:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all disabled:opacity-60 cursor-pointer"
+          className="w-full flex justify-center items-center gap-2 py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-emerald-950/50 text-sm font-bold text-white bg-[#16a34a] hover:bg-[#15803d] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all disabled:opacity-60 cursor-pointer"
         >
           {loading ? (
             <>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   UserPlus,
   Mail,
@@ -48,6 +48,23 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
   // Suppression et modification de rôle
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [updatingRoleId, setUpdatingRoleId] = useState<string | null>(null);
+
+  // Fermer le tiroir avec Échap
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowModal(false);
+    };
+    if (showModal) {
+      window.addEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = '';
+    };
+  }, [showModal]);
 
   const handleCreateUser = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -161,7 +178,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <KeyRound size={24} className="text-blue-600" />
+            <KeyRound size={24} className="text-emerald-600" />
             Gestion des Accès &amp; Utilisateurs
           </h1>
           <p className="text-xs text-slate-600 mt-1">
@@ -174,7 +191,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
             setError(null);
             setShowModal(true);
           }}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs transition-colors shadow-sm self-start sm:self-auto cursor-pointer"
         >
           <UserPlus size={16} />
           <span>Donner un nouvel accès</span>
@@ -215,7 +232,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
             placeholder="Filtrer par nom, adresse email ou rôle..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
           />
         </div>
       </div>
@@ -247,7 +264,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2.5">
                           <div className={`w-8 h-8 rounded-full font-bold text-xs flex items-center justify-center shrink-0 ${
-                            user.role === 'admin' ? 'bg-blue-600 text-white' : 'bg-stone-200 text-slate-800 border border-stone-300'
+                            user.role === 'admin' ? 'bg-[#16a34a] text-white' : 'bg-stone-200 text-slate-800 border border-stone-300'
                           }`}>
                             {user.full_name[0]?.toUpperCase() || 'U'}
                           </div>
@@ -256,7 +273,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                               {user.full_name}
                             </span>
                             {isCurrent && (
-                              <span className="text-[10px] text-blue-600 font-semibold">
+                              <span className="text-[10px] text-emerald-600 font-semibold">
                                 (Votre compte actuel)
                               </span>
                             )}
@@ -268,8 +285,8 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                       </td>
                       <td className="py-3 px-4">
                         {isCurrent ? (
-                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600">
-                            <Shield size={13} className="text-blue-600" />
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600">
+                            <Shield size={13} className="text-emerald-600" />
                             Administrateur (Vous)
                           </span>
                         ) : (
@@ -278,9 +295,9 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                               value={user.role}
                               disabled={updatingRoleId === user.id}
                               onChange={(e) => handleRoleChange(user, e.target.value as 'admin' | 'agent')}
-                              className={`px-2.5 py-1 text-xs rounded-lg border bg-white font-medium focus:ring-2 focus:ring-blue-500 outline-none transition-colors cursor-pointer ${
+                              className={`px-2.5 py-1 text-xs rounded-lg border bg-white font-medium focus:ring-2 focus:ring-emerald-500 outline-none transition-colors cursor-pointer ${
                                 user.role === 'admin'
-                                  ? 'border-blue-500 text-blue-700 font-bold bg-blue-50/40'
+                                  ? 'border-emerald-500 text-emerald-700 font-bold bg-emerald-50/40'
                                   : 'border-stone-300 text-slate-700'
                               }`}
                             >
@@ -288,7 +305,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                               <option value="admin">Administrateur (Tous droits)</option>
                             </select>
                             {updatingRoleId === user.id && (
-                              <Loader2 size={13} className="animate-spin text-blue-600" />
+                              <Loader2 size={13} className="animate-spin text-emerald-600" />
                             )}
                           </div>
                         )}
@@ -331,8 +348,8 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
             {/* Modal Header */}
             <div className="bg-stone-50 text-slate-900 p-5 flex items-center justify-between border-b border-stone-200">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-blue-50 rounded-lg border border-blue-200">
-                  <UserPlus size={20} className="text-blue-600" />
+                <div className="p-2 bg-emerald-50 rounded-lg border border-emerald-200">
+                  <UserPlus size={20} className="text-emerald-600" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold leading-tight">Donner un Nouvel Accès</h3>
@@ -359,7 +376,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                   placeholder="Ex: Jean Dupont"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                 />
               </div>
 
@@ -375,7 +392,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                     placeholder="agent@welj-express.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   />
                 </div>
               </div>
@@ -393,7 +410,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                     placeholder="Minimum 6 caractères"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+                    className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
                   />
                 </div>
               </div>
@@ -410,7 +427,7 @@ export function UsersClient({ initialUsers, currentUserId }: Props) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all shadow-sm disabled:opacity-60 cursor-pointer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white text-xs font-bold transition-all shadow-sm disabled:opacity-60 cursor-pointer"
                 >
                   {loading ? (
                     <>

@@ -123,7 +123,7 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2.5">
-            <History size={24} className="text-blue-600" />
+            <History size={24} className="text-emerald-600" />
             Journal des Vérifications de Sécurité
           </h1>
           <p className="text-xs text-slate-600 mt-1">
@@ -175,7 +175,7 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
             placeholder="Rechercher par carte, membre, code membre ou hash de scan..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
+            className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 placeholder:text-stone-400 focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
           />
         </div>
 
@@ -197,7 +197,7 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
               onClick={() => setResultFilter(tab.id)}
               className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                 resultFilter === tab.id
-                  ? 'bg-blue-600 text-white font-semibold'
+                  ? 'bg-[#16a34a] text-white font-semibold'
                   : 'bg-stone-100 text-slate-700 hover:bg-stone-200 border border-stone-300'
               }`}
             >
@@ -246,7 +246,7 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
                     </td>
                     <td className="py-3 px-4">
                       {log.cards ? (
-                        <span className="font-mono font-bold text-blue-600 block">
+                        <span className="font-mono font-bold text-emerald-600 block">
                           {log.cards.card_identifier}
                         </span>
                       ) : (
@@ -259,9 +259,9 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
                       {log.cards?.members ? (
                         <Link
                           href={`/admin/members/${log.cards.members.id}`}
-                          className="hover:text-blue-600 transition-colors block"
+                          className="hover:text-emerald-600 transition-colors block"
                         >
-                          <span className="font-semibold text-slate-900 hover:text-blue-600 block">
+                          <span className="font-semibold text-slate-900 hover:text-emerald-600 block">
                             {log.cards.members.first_name} {log.cards.members.last_name}
                           </span>
                           <span className="text-[10px] text-slate-500 font-mono">

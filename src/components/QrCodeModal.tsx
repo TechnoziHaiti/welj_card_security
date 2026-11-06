@@ -61,7 +61,7 @@ export function QrCodeModal({ isOpen, onClose, card, member, rawToken }: QrCodeM
                 Carte créée avec succès !
               </h3>
               <p className="text-xs text-slate-600 font-mono mt-0.5">
-                {member ? `${member.first_name} ${member.last_name}` : 'Nouveau titulaire'} &bull; Identifiant : <strong className="text-blue-600">{card.card_identifier}</strong>
+                {member ? `${member.first_name} ${member.last_name}` : 'Nouveau titulaire'} &bull; Identifiant : <strong className="text-emerald-600">{card.card_identifier}</strong>
               </p>
             </div>
           </div>
@@ -94,11 +94,11 @@ export function QrCodeModal({ isOpen, onClose, card, member, rawToken }: QrCodeM
                 readOnly
                 value={verificationUrl}
                 onClick={(e) => (e.target as HTMLInputElement).select()}
-                className="flex-1 px-3.5 py-3 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 font-mono focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none select-all"
+                className="flex-1 px-3.5 py-3 text-xs bg-stone-50 border border-stone-300 rounded-xl text-slate-900 font-mono focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none select-all"
               />
               <button
                 onClick={handleCopyLink}
-                className="px-5 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs inline-flex items-center gap-2 transition-all shadow-sm shrink-0 active:scale-95 cursor-pointer"
+                className="px-5 py-3 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-bold text-xs inline-flex items-center gap-2 transition-all shadow-sm shrink-0 active:scale-95 cursor-pointer"
               >
                 {copied ? <Check size={16} className="text-white" /> : <Copy size={16} />}
                 <span>{copied ? 'Copié !' : 'Copier le lien'}</span>
@@ -118,7 +118,7 @@ export function QrCodeModal({ isOpen, onClose, card, member, rawToken }: QrCodeM
                   href={verificationUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+                  className="inline-flex items-center gap-1.5 text-emerald-600 hover:text-emerald-700 font-semibold transition-colors"
                 >
                   <ExternalLink size={13} />
                   <span>Tester le lien</span>

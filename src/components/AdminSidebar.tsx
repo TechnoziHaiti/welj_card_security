@@ -19,9 +19,10 @@ interface AdminSidebarProps {
   userEmail?: string | null;
   userName?: string | null;
   userRole?: string | null;
+  onNavigate?: () => void;
 }
 
-export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProps) {
+export function AdminSidebar({ userEmail, userName, userRole, onNavigate }: AdminSidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -58,7 +59,7 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
       icon: CreditCard,
     },
     {
-      label: 'Historique des vérifications',
+      label: 'Historique des Scan',
       href: '/admin/history',
       icon: History,
     },
@@ -77,8 +78,8 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
     <aside className="w-64 h-full bg-black text-white flex flex-col shrink-0 border-r border-neutral-900 shadow-2xl select-none">
       {/* Brand Header */}
       <div className="p-5 border-b border-neutral-900 shrink-0">
-        <Link href="/admin/dashboard" className="block group">
-          <span className="text-sm font-black tracking-wider text-white uppercase block leading-snug group-hover:text-blue-400 transition-colors">
+        <Link href="/admin/dashboard" onClick={() => onNavigate?.()} className="block group">
+          <span className="text-sm font-black tracking-wider text-white uppercase block leading-snug group-hover:text-emerald-400 transition-colors">
             WELJ EXPRESS SERVICES
           </span>
         </Link>
@@ -96,13 +97,14 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
             <Link
               key={item.href}
               href={item.href}
+              onClick={() => onNavigate?.()}
               className={`flex items-center gap-3 px-3 py-2 text-sm font-semibold transition-colors ${
                 isActive
-                  ? 'text-blue-400 font-bold'
+                  ? 'text-emerald-400 font-bold'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              <Icon size={18} className={isActive ? 'text-blue-400' : 'text-slate-400'} />
+              <Icon size={18} className={isActive ? 'text-emerald-400' : 'text-slate-400'} />
               <span>{item.label}</span>
             </Link>
           );
@@ -114,7 +116,7 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0 ${
-              isAdmin ? 'bg-blue-600' : 'bg-slate-700 border border-slate-600'
+              isAdmin ? 'bg-[#16a34a]' : 'bg-slate-700 border border-slate-600'
             }`}>
               {(userName || userEmail || 'W')[0].toUpperCase()}
             </div>
@@ -124,7 +126,7 @@ export function AdminSidebar({ userEmail, userName, userRole }: AdminSidebarProp
               </p>
               <p className="text-[11px] text-slate-400 truncate flex items-center gap-1">
                 {isAdmin ? (
-                  <span className="text-blue-400 font-medium">Administrateur</span>
+                  <span className="text-emerald-400 font-medium">Administrateur</span>
                 ) : (
                   <span className="text-slate-300 font-medium">Agent de Contrôle (Lecture)</span>
                 )}

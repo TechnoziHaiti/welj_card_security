@@ -19,10 +19,7 @@ interface Props {
 export function LiveVerificationCard({ verification }: Props) {
   return (
     <div className="relative group w-full">
-      {/* Effet lumineux néon bleu en dessous */}
-      <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 w-4/5 h-28 bg-blue-600/35 blur-3xl rounded-full pointer-events-none" />
-
-      <div className="relative bg-black text-white rounded-3xl border border-stone-800 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_10px_30px_rgba(37,99,235,0.3)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+      <div className="relative bg-black text-white rounded-3xl border border-stone-800 shadow-[0_20px_50px_rgba(0,0,0,0.9),0_10px_30px_rgba(5,150,105,0.25)] overflow-hidden animate-in fade-in zoom-in-95 duration-200">
         {/* EN-TÊTE : FOND BLANC AVEC LOGO WELJ COMPACT */}
         <div className="bg-white py-3.5 px-4 flex flex-col items-center justify-center border-b border-stone-200">
           <Image
@@ -38,7 +35,7 @@ export function LiveVerificationCard({ verification }: Props) {
 
         {/* CORPS : FULL BLACK ÉPURÉ */}
         <div className="p-5 sm:p-6 space-y-4">
-          {/* Badge vérifié bleu officiel */}
+          {/* Badge vérifié officiel */}
           <div className="text-center space-y-2">
             <div className="flex items-center justify-center mx-auto">
               <Image
@@ -46,13 +43,13 @@ export function LiveVerificationCard({ verification }: Props) {
                 alt="Badge Vérifié"
                 width={80}
                 height={80}
-                className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_0_20px_rgba(37,99,235,0.6)]"
+                className="w-16 h-16 sm:w-20 sm:h-20 object-contain drop-shadow-[0_0_20px_rgba(16,185,129,0.5)]"
                 priority
                 unoptimized
               />
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-black text-blue-500 tracking-tight font-sans">
+            <h2 className="text-xl sm:text-2xl font-black text-emerald-500 tracking-tight font-sans">
               Carte Authentique &amp; Active
             </h2>
 
@@ -80,7 +77,7 @@ export function LiveVerificationCard({ verification }: Props) {
                 <Hash size={14} className="text-stone-500" />
                 <span>Code Client</span>
               </span>
-              <span className="font-mono font-bold text-blue-400 text-sm">
+              <span className="font-mono font-bold text-emerald-400 text-sm">
                 {verification.client_code || verification.member_code}
               </span>
             </div>
@@ -102,7 +99,7 @@ export function LiveVerificationCard({ verification }: Props) {
                 <Award size={14} className="text-stone-500" />
                 <span>Type de Compte</span>
               </span>
-              <span className="font-bold text-blue-400 text-xs px-2.5 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">
+              <span className="font-bold text-emerald-400 text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
                 {verification.account_type || 'Bronze'}
               </span>
             </div>

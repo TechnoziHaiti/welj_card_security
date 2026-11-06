@@ -191,7 +191,7 @@ export default async function AdminDashboardPage() {
           {isAdmin && (
             <Link
               href="/admin/members/new"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#16a34a] hover:bg-[#15803d] text-white font-semibold text-xs transition-colors shadow-sm"
             >
               <UserPlus size={15} />
               <span>Nouveau Membre</span>
@@ -203,7 +203,7 @@ export default async function AdminDashboardPage() {
             target="_blank"
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-stone-50 text-slate-800 font-semibold text-xs transition-colors border border-stone-300 shadow-sm"
           >
-            <QrCode size={15} className="text-blue-600" />
+            <QrCode size={15} className="text-emerald-600" />
             <span>Vérificateur QR</span>
           </Link>
         </div>
@@ -223,7 +223,7 @@ export default async function AdminDashboardPage() {
                 <Icon size={22} className="text-slate-800" />
                 <ArrowUpRight
                   size={14}
-                  className="text-stone-400 group-hover:text-blue-600 transition-colors"
+                  className="text-stone-400 group-hover:text-emerald-600 transition-colors"
                 />
               </div>
               <div>
@@ -245,14 +245,14 @@ export default async function AdminDashboardPage() {
         <div className="bg-white rounded-2xl border border-stone-300/80 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <CreditCard size={18} className="text-blue-600" />
+              <CreditCard size={18} className="text-emerald-600" />
               <h2 className="text-base font-bold text-slate-900">
                 Dernières Cartes Émises
               </h2>
             </div>
             <Link
               href="/admin/cards"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
             >
               Voir toutes &rarr;
             </Link>
@@ -293,14 +293,14 @@ export default async function AdminDashboardPage() {
         <div className="bg-white rounded-2xl border border-stone-300/80 shadow-sm p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <History size={18} className="text-blue-600" />
+              <History size={18} className="text-emerald-600" />
               <h2 className="text-base font-bold text-slate-900">
                 Journal des Vérifications
               </h2>
             </div>
             <Link
               href="/admin/history"
-              className="text-xs font-semibold text-blue-600 hover:text-blue-700 transition-colors"
+              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 transition-colors"
             >
               Tout l&apos;historique &rarr;
             </Link>

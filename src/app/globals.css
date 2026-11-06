@@ -7,6 +7,52 @@
 :root {
   --background: #010101;
   --foreground: #f8fafc;
+  /* ==========================================================================
+     CODE COULEUR UNIQUE DU SYSTÈME (VERT SOLIDE VIF)
+     Modifiez ces variables pour changer la couleur de tout le système en un clic !
+     ========================================================================== */
+  --system-green: #16a34a;       /* Vert solide vif principal */
+  --system-green-hover: #15803d; /* Vert foncé au survol (hover) */
+  --system-green-light: #22c55e; /* Vert clair accents */
+  --system-green-glow: rgba(22, 163, 74, 0.4);
+}
+
+/* Remplacement universel et instantané de tous les bleus par le vert solide vif */
+.bg-blue-600,
+.bg-blue-500 {
+  background-color: var(--system-green) !important;
+}
+
+.hover\:bg-blue-700:hover,
+.hover\:bg-blue-600:hover,
+.hover\:bg-blue-500:hover {
+  background-color: var(--system-green-hover) !important;
+}
+
+.text-blue-600,
+.text-blue-500,
+.text-blue-400,
+.text-blue-300 {
+  color: var(--system-green) !important;
+}
+
+.hover\:text-blue-700:hover,
+.hover\:text-blue-600:hover,
+.hover\:text-blue-500:hover,
+.hover\:text-blue-400:hover {
+  color: var(--system-green-hover) !important;
+}
+
+.border-blue-600,
+.border-blue-500,
+.border-blue-400,
+.border-blue-300 {
+  border-color: var(--system-green) !important;
+}
+
+.focus\:ring-blue-500:focus,
+.focus\:ring-blue-600:focus {
+  --tw-ring-color: var(--system-green) !important;
 }
 
 *, *::before, *::after {
@@ -73,20 +119,20 @@ html, body {
   height: 3px;
   background: linear-gradient(
     90deg,
-    rgba(0, 245, 255, 0) 0%,
-    rgba(0, 245, 255, 0.5) 10%,
-    #00f5ff 25%,
+    rgba(22, 163, 74, 0) 0%,
+    rgba(22, 163, 74, 0.5) 10%,
+    #16a34a 25%,
     #ffffff 50%,
-    #00f5ff 75%,
-    rgba(0, 245, 255, 0.5) 90%,
-    rgba(0, 245, 255, 0) 100%
+    #16a34a 75%,
+    rgba(22, 163, 74, 0.5) 90%,
+    rgba(22, 163, 74, 0) 100%
   );
   box-shadow:
-    0 0 8px #00f5ff,
-    0 0 16px #00f5ff,
-    0 0 28px #00f5ff,
-    0 0 42px rgba(0, 245, 255, 0.9),
-    0 0 60px rgba(0, 245, 255, 0.5);
+    0 0 8px #16a34a,
+    0 0 16px #16a34a,
+    0 0 28px #16a34a,
+    0 0 42px rgba(22, 163, 74, 0.9),
+    0 0 60px rgba(22, 163, 74, 0.5);
   border-radius: 9999px;
   animation: laserScanVertical 2.2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
   will-change: top;
@@ -101,8 +147,8 @@ html, body {
   bottom: -14px;
   background: radial-gradient(
     ellipse at center,
-    rgba(0, 245, 255, 0.45) 0%,
-    rgba(0, 245, 255, 0.18) 45%,
+    rgba(22, 163, 74, 0.45) 0%,
+    rgba(22, 163, 74, 0.18) 45%,
     transparent 75%
   );
   pointer-events: none;
