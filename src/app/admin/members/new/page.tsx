@@ -6,7 +6,6 @@ import Link from 'next/link';
 import {
   UserPlus,
   ArrowLeft,
-  ShieldCheck,
   CreditCard,
   AlertCircle,
   Loader2,
@@ -103,6 +102,9 @@ export default function NewMemberPage() {
       let memberData: any = null;
       let memberError: any = null;
 
+      const adhesionDateObj = new Date(`${creationDate}T12:00:00.000Z`);
+      const adhesionIso = adhesionDateObj.toISOString();
+
       const firstAttempt = await supabase
         .from('members')
         .insert({
@@ -112,6 +114,7 @@ export default function NewMemberPage() {
           member_code: enteredClientCode,
           client_code: enteredClientCode,
           status: 'actif',
+          created_at: adhesionIso,
         })
         .select()
         .single();
@@ -131,6 +134,7 @@ export default function NewMemberPage() {
               account_type: accountType,
               client_code: enteredClientCode,
               status: 'actif',
+              created_at: adhesionIso,
             })
             .select()
             .single();
@@ -147,6 +151,7 @@ export default function NewMemberPage() {
               account_type: accountType,
               member_code: enteredClientCode,
               status: 'actif',
+              created_at: adhesionIso,
             })
             .select()
             .single();
@@ -350,7 +355,7 @@ export default function NewMemberPage() {
                   htmlFor="creationDate"
                   className="block text-[11px] font-semibold text-slate-600 uppercase mb-1.5"
                 >
-                  Date d&apos;Adhésion
+                  Date d&apos;Adhésion (Système initial)
                 </label>
                 <input
                   id="creationDate"
@@ -360,6 +365,9 @@ export default function NewMemberPage() {
                   onChange={(e) => handleCreationDateChange(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-sm border border-stone-300 rounded-xl focus:ring-2 focus:ring-emerald-500 outline-none bg-white text-slate-900"
                 />
+                <span className="text-[10px] text-slate-500 mt-1 block">
+                  Date d&apos;inscription originale du membre (reprise de votre autre système).
+                </span>
               </div>
 
               <div>
@@ -399,12 +407,9 @@ export default function NewMemberPage() {
           </div>
 
           {/* Notice Confidentialité */}
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-slate-700 text-xs flex items-start gap-2.5">
-            <ShieldCheck size={18} className="text-emerald-600 shrink-0 mt-0.5" />
-            <span>
-              <strong>Sécurité &amp; Confidentialité :</strong> Aucune photo n&apos;est enregistrée. La carte est liée au QR Code et protégée par un code de sécurité dynamique en direct (30 min) lors des contrôles.
-            </span>
-          </div>
+          <p className="text-xs text-slate-500 leading-relaxed">
+            <strong className="text-slate-700">Sécurité &amp; Confidentialité :</strong> Aucune photo n&apos;est enregistrée. La carte est liée au QR Code et protégée par un code de sécurité dynamique en direct (30 min) lors des contrôles.
+          </p>
 
           {error && (
             <div className="p-4 rounded-xl bg-transparent border border-rose-500/60 text-rose-600 text-xs flex items-center gap-2.5">

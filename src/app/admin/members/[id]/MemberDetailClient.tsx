@@ -11,6 +11,7 @@ import {
   QrCode,
   ShieldAlert,
   RefreshCw,
+  RotateCcw,
   Trash2,
   CheckCircle2,
   Clock,
@@ -50,6 +51,9 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
   const [editLastName, setEditLastName] = useState(member.last_name);
   const [editClientCode, setEditClientCode] = useState(member.client_code || member.member_code || '');
   const [editAccountType, setEditAccountType] = useState<AccountType>(member.account_type);
+  const [editAdhesionDate, setEditAdhesionDate] = useState(
+    member.created_at ? new Date(member.created_at).toISOString().split('T')[0] : ''
+  );
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Actions Cartes
@@ -69,6 +73,10 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
 
     try {
       const editCode = editClientCode.trim();
+      const updatedAdhesionIso = editAdhesionDate
+        ? new Date(`${editAdhesionDate}T12:00:00.000Z`).toISOString()
+        : member.created_at;
+
       let data: any = null;
       let error: any = null;
 
@@ -80,6 +88,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
           member_code: editCode,
           client_code: editCode,
           account_type: editAccountType,
+          created_at: updatedAdhesionIso,
         })
         .eq('id', member.id)
         .select()
@@ -99,6 +108,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
               last_name: editLastName.trim(),
               client_code: editCode,
               account_type: editAccountType,
+              created_at: updatedAdhesionIso,
             })
             .eq('id', member.id)
             .select()
@@ -115,6 +125,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
               last_name: editLastName.trim(),
               member_code: editCode,
               account_type: editAccountType,
+              created_at: updatedAdhesionIso,
             })
             .eq('id', member.id)
             .select()
@@ -291,6 +302,96 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
       router.refresh();
     } catch (err: any) {
       setMessage({ text: err?.message || 'Erreur lors du renouvellement.', type: 'error' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  // Remplacement de carte (Perte / Détérioration) : Conserve la date d'expiration actuelle (continuité)
+  const handleReplaceCard = async (oldCard: Card) => {
+    if (member.status !== 'actif') {
+      setMessage({ text: 'Le compte du membre doit être actif pour remplacer sa carte.', type: 'error' });
+      return;
+    }
+
+    const memberName = `${member.first_name} ${member.last_name}`;
+    const expirationFormatted = formatDateFr(oldCard.expires_at);
+
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm(
+          `CONFIRMATION - REMPLACEMENT DE CARTE (PERTE / VOL)\n\n` +
+          `Voulez-vous émettre une carte de remplacement pour ${memberName} (${oldCard.card_identifier}) ?\n\n` +
+          `🔒 CONTINUITÉ ET SÉCURITÉ :\n` +
+          `• L'ancienne carte physique sera immédiatement RÉVOQUÉE et invalidée.\n` +
+          `• La nouvelle carte CONSERVERA la date d'expiration actuelle (${expirationFormatted}).\n` +
+          `• Un nouveau QR Code officiel et sécurisé sera généré.\n\n` +
+          `Cliquez sur OK pour confirmer le remplacement.`
+        )
+      : true;
+
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    setMessage(null);
+
+    try {
+      const now = new Date();
+
+      // 1. Révocation immédiate de l'ancienne carte
+      const { error: revokeError } = await supabase
+        .from('cards')
+        .update({
+          status: 'revoquee',
+          revoked_at: now.toISOString(),
+        })
+        .eq('id', oldCard.id);
+
+      if (revokeError) {
+        throw new Error(revokeError.message || 'Erreur lors de la révocation de l\'ancienne carte.');
+      }
+
+      // 2. Création de la nouvelle carte liée avec la MÊME date d'expiration (continuité)
+      const rawToken = generateSecureToken(32);
+      const tokenHash = hashToken(rawToken);
+      const existingCount = cards.filter((c) => c.member_id === member.id).length;
+      const baseCode = member.client_code || member.member_code || 'MEMBRE';
+      const cardIdentifier = generateCardIdentifier(baseCode, `R${existingCount}`);
+
+      const { data: newCard, error: newCardError } = await supabase
+        .from('cards')
+        .insert({
+          member_id: member.id,
+          card_identifier: cardIdentifier,
+          qr_token_hash: tokenHash,
+          created_at: now.toISOString(),
+          expires_at: oldCard.expires_at, // Continuité : conserve l'échéance originale
+          status: 'active',
+          renewed_from_card_id: oldCard.id,
+        })
+        .select()
+        .single();
+
+      if (newCardError || !newCard) {
+        throw new Error(newCardError?.message || 'Erreur lors de la création de la carte de remplacement.');
+      }
+
+      // 3. Mise à jour de la liste locale
+      setCards([
+        newCard as Card,
+        ...cards.map((c) => (c.id === oldCard.id ? { ...c, status: 'revoquee' as const, revoked_at: now.toISOString() } : c)),
+      ]);
+
+      setActiveModalCard(newCard as Card);
+      setRawModalToken(rawToken);
+      setShowQrModal(true);
+
+      setMessage({
+        text: `Carte remplacée avec succès ! Nouvel identifiant : ${newCard.card_identifier}. Date d'expiration conservée au ${expirationFormatted}.`,
+        type: 'success',
+      });
+      router.refresh();
+    } catch (err: any) {
+      setMessage({ text: err?.message || 'Erreur lors du remplacement.', type: 'error' });
     } finally {
       setActionLoading(false);
     }
@@ -641,6 +742,22 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                 </select>
               </div>
 
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 uppercase mb-1">
+                  Date d&apos;Adhésion
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={editAdhesionDate}
+                  onChange={(e) => setEditAdhesionDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-stone-50 border border-stone-300 text-slate-900 rounded-xl focus:bg-white focus:ring-2 focus:ring-emerald-500 outline-none"
+                />
+                <span className="text-[10px] text-slate-500 mt-1 block">
+                  Date d&apos;inscription originale du membre (sur votre autre système).
+                </span>
+              </div>
+
               <div className="flex gap-2 pt-2">
                 <button
                   type="submit"
@@ -652,7 +769,16 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                 </button>
                 <button
                   type="button"
-                  onClick={() => setIsEditing(false)}
+                  onClick={() => {
+                    setIsEditing(false);
+                    setEditFirstName(member.first_name);
+                    setEditLastName(member.last_name);
+                    setEditClientCode(member.client_code || member.member_code || '');
+                    setEditAccountType(member.account_type);
+                    setEditAdhesionDate(
+                      member.created_at ? new Date(member.created_at).toISOString().split('T')[0] : ''
+                    );
+                  }}
                   className="px-3 py-2 border border-stone-300 text-slate-700 rounded-xl hover:bg-stone-100 transition-colors"
                 >
                   Annuler
@@ -799,12 +925,13 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                       </button>
 
                       <button
-                        onClick={() => handleRevokeCard(activeCard)}
-                        disabled={actionLoading}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer"
+                        onClick={() => handleReplaceCard(activeCard)}
+                        disabled={actionLoading || member.status !== 'actif'}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 active:bg-amber-800 text-white font-bold text-xs transition-colors shadow-sm cursor-pointer disabled:opacity-50"
+                        title="Remplacement pour perte ou détérioration (garde la même date d'expiration)"
                       >
-                        <ShieldAlert size={14} />
-                        <span>Révoquer</span>
+                        <RotateCcw size={14} />
+                        <span>Remplacement carte</span>
                       </button>
                     </>
                   )}
