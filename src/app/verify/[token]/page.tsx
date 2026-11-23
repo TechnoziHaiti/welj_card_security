@@ -106,12 +106,8 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
         card = cardByToken;
       }
 
-      // Étape 2 & 3 : Recherche de secours par Identifiant / Code Client
-      // ⚠️ SÉCURITÉ ANTI-FRAUDE STRICTE :
-      // Accessible UNIQUEMENT aux agents authentifiés connectés (ex: saisie manuelle dans le scanner).
-      // Un scan externe public (non connecté) DOIT OBLIGATOIREMENT posséder le jeton cryptographique secret (Étape 1).
-      // Cela interdit formellement à un fraudeur de générer un faux QR Code avec juste le numéro écrit sur la carte.
-      if (!card && isAuthenticatedScanner) {
+      // Étape 2 : Si non trouvée, recherche par Identifiant Carte (ex: WELJ-RP861950, WELJ-20260001, RP861950)
+      if (!card) {
         const candidateWithoutPrefix = cleanToken.replace(/^WELJ-/i, '');
         const { data: cardByIdentifier } = await adminSupabase
           .from('cards')
@@ -126,44 +122,45 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
         if (cardByIdentifier) {
           card = cardByIdentifier;
         }
+      }
 
-        if (!card) {
-          let memberFound: any = null;
+      // Étape 3 : Si non trouvée, recherche par Code Client dans la table members
+      if (!card) {
+        let memberFound: any = null;
+        try {
+          const { data: m1 } = await adminSupabase
+            .from('members')
+            .select('*')
+            .or(`client_code.eq.${cleanToken},client_code.ilike.${cleanToken}`)
+            .limit(1)
+            .maybeSingle();
+          if (m1) memberFound = m1;
+        } catch {}
+
+        if (!memberFound) {
           try {
-            const { data: m1 } = await adminSupabase
+            const { data: m2 } = await adminSupabase
               .from('members')
               .select('*')
-              .or(`client_code.eq.${cleanToken},client_code.ilike.${cleanToken}`)
+              .or(`member_code.eq.${cleanToken},member_code.ilike.${cleanToken}`)
               .limit(1)
               .maybeSingle();
-            if (m1) memberFound = m1;
+            if (m2) memberFound = m2;
           } catch {}
+        }
 
-          if (!memberFound) {
-            try {
-              const { data: m2 } = await adminSupabase
-                .from('members')
-                .select('*')
-                .or(`member_code.eq.${cleanToken},member_code.ilike.${cleanToken}`)
-                .limit(1)
-                .maybeSingle();
-              if (m2) memberFound = m2;
-            } catch {}
-          }
+        if (memberFound) {
+          member = memberFound;
+          const { data: memberCard } = await adminSupabase
+            .from('cards')
+            .select('*')
+            .eq('member_id', memberFound.id)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
 
-          if (memberFound) {
-            member = memberFound;
-            const { data: memberCard } = await adminSupabase
-              .from('cards')
-              .select('*')
-              .eq('member_id', memberFound.id)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .maybeSingle();
-
-            if (memberCard) {
-              card = memberCard;
-            }
+          if (memberCard) {
+            card = memberCard;
           }
         }
       }
