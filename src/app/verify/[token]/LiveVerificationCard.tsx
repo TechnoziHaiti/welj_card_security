@@ -99,8 +99,8 @@ export function LiveVerificationCard({ verification }: Props) {
                 <Award size={14} className="text-stone-500" />
                 <span>Type de Compte</span>
               </span>
-              <span className="font-bold text-emerald-400 text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                {verification.account_type || 'Bronze'}
+              <span className="font-bold text-amber-500 text-sm">
+                {verification.account_type || 'Platinum'}
               </span>
             </div>
 
