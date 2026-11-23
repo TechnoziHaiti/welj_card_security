@@ -325,8 +325,8 @@ export default async function AdminDashboardPage() {
                           : 'Token Inconnu / Non indexé'}
                       </span>
                       {log.cards?.members?.account_type && (
-                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-stone-100 text-slate-700 border border-stone-200">
-                          {log.cards.members.account_type}
+                        <span className="text-[11px] font-bold text-slate-600">
+                          &bull; {log.cards.members.account_type}
                         </span>
                       )}
                     </p>

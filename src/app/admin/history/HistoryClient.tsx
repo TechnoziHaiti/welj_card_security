@@ -91,40 +91,9 @@ function parseScanSource(rawAgent: string | null) {
 
 function getAccountTypeBadge(accountType?: string | null) {
   if (!accountType) return null;
-  const lower = accountType.toLowerCase();
-
-  if (lower === 'platinum') {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900 text-amber-300 border border-amber-400/40 shadow-sm">
-        <span>👑 Platinum</span>
-      </span>
-    );
-  }
-  if (lower === 'gold') {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-white shadow-sm">
-        <span>⭐ Gold</span>
-      </span>
-    );
-  }
-  if (lower === 'silver') {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-600 text-white shadow-sm">
-        <span>🥈 Silver</span>
-      </span>
-    );
-  }
-  if (lower === 'bronze') {
-    return (
-      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-amber-800 text-white shadow-sm">
-        <span>🥉 Bronze</span>
-      </span>
-    );
-  }
-
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold bg-stone-100 text-slate-800 border border-stone-200">
-      <span>{accountType}</span>
+    <span className="text-[11px] font-bold text-slate-800">
+      {accountType}
     </span>
   );
 }
@@ -372,6 +341,9 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
                           >
                             <div className="flex items-center gap-1.5 mb-0.5">
                               {getAccountTypeBadge(log.cards.members.account_type)}
+                              {log.cards.members.account_type && (log.cards.members.client_code || log.cards.members.member_code) && (
+                                <span className="text-stone-300 text-[10px]">•</span>
+                              )}
                               <span className="font-mono font-bold text-[11px] text-emerald-700">
                                 {log.cards.members.client_code || log.cards.members.member_code}
                               </span>
@@ -392,9 +364,6 @@ export function HistoryClient({ initialLogs, isAdmin = true }: Props) {
                             <div className="flex items-center gap-1.5 font-bold text-slate-900">
                               <UserCheck size={13} className="text-emerald-600 shrink-0" />
                               <span>{operator.name}</span>
-                              <span className="px-1.5 py-0.2 rounded text-[9px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                {operator.role}
-                              </span>
                             </div>
                             {operator.email && (
                               <p className="text-[10px] text-slate-500 font-mono pl-4">

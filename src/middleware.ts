@@ -40,7 +40,9 @@ export async function middleware(request: NextRequest) {
   const isAccessingAdmin = request.nextUrl.pathname.startsWith('/admin');
   const isAccessingUsers = request.nextUrl.pathname.startsWith('/admin/users');
   const isAccessingNewMember = request.nextUrl.pathname.startsWith('/admin/members/new');
-  const isAccessingVerify = request.nextUrl.pathname.startsWith('/verify');
+  // Seul le scanner caméra intégré (/verify) est protégé par mot de passe.
+  // La consultation d'une carte via son QR Code (/verify/[token]) est publique.
+  const isAccessingVerifyScanner = request.nextUrl.pathname === '/verify' || request.nextUrl.pathname === '/verify/';
   const isAccessingLogin = request.nextUrl.pathname === '/login';
 
   // Redirection automatique de courtoisie /signin -> /login
@@ -48,7 +50,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
 
-  const isProtected = isAccessingAdmin || isAccessingVerify;
+  const isProtected = isAccessingAdmin || isAccessingVerifyScanner;
   const INACTIVITY_TIMEOUT_MS = 60 * 60 * 1000; // 1 heure d'inactivité
   const now = Date.now();
 

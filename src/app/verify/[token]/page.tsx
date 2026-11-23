@@ -48,6 +48,7 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
 
   // Détection du compte agent / administrateur ayant scanné (s'il est authentifié)
   let scanningAccountInfo = 'Contrôle Public Direct';
+  let isAuthenticatedScanner = false;
   try {
     const anonSupabase = await createAnonClient();
     const {
@@ -55,6 +56,7 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
     } = await anonSupabase.auth.getUser();
 
     if (authUser) {
+      isAuthenticatedScanner = true;
       const adminDb = createAdminClient();
       const { data: profile } = await adminDb
         .from('profiles')
@@ -104,8 +106,12 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
         card = cardByToken;
       }
 
-      // Étape 2 : Si non trouvée, recherche par Identifiant Carte (ex: WELJ-RP861950, WELJ-20260001, RP861950)
-      if (!card) {
+      // Étape 2 & 3 : Recherche de secours par Identifiant / Code Client
+      // ⚠️ SÉCURITÉ ANTI-FRAUDE STRICTE :
+      // Accessible UNIQUEMENT aux agents authentifiés connectés (ex: saisie manuelle dans le scanner).
+      // Un scan externe public (non connecté) DOIT OBLIGATOIREMENT posséder le jeton cryptographique secret (Étape 1).
+      // Cela interdit formellement à un fraudeur de générer un faux QR Code avec juste le numéro écrit sur la carte.
+      if (!card && isAuthenticatedScanner) {
         const candidateWithoutPrefix = cleanToken.replace(/^WELJ-/i, '');
         const { data: cardByIdentifier } = await adminSupabase
           .from('cards')
@@ -120,45 +126,44 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
         if (cardByIdentifier) {
           card = cardByIdentifier;
         }
-      }
 
-      // Étape 3 : Si non trouvée, recherche par Code Client dans la table members
-      if (!card) {
-        let memberFound: any = null;
-        try {
-          const { data: m1 } = await adminSupabase
-            .from('members')
-            .select('*')
-            .or(`client_code.eq.${cleanToken},client_code.ilike.${cleanToken}`)
-            .limit(1)
-            .maybeSingle();
-          if (m1) memberFound = m1;
-        } catch {}
-
-        if (!memberFound) {
+        if (!card) {
+          let memberFound: any = null;
           try {
-            const { data: m2 } = await adminSupabase
+            const { data: m1 } = await adminSupabase
               .from('members')
               .select('*')
-              .or(`member_code.eq.${cleanToken},member_code.ilike.${cleanToken}`)
+              .or(`client_code.eq.${cleanToken},client_code.ilike.${cleanToken}`)
               .limit(1)
               .maybeSingle();
-            if (m2) memberFound = m2;
+            if (m1) memberFound = m1;
           } catch {}
-        }
 
-        if (memberFound) {
-          member = memberFound;
-          const { data: memberCard } = await adminSupabase
-            .from('cards')
-            .select('*')
-            .eq('member_id', memberFound.id)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
+          if (!memberFound) {
+            try {
+              const { data: m2 } = await adminSupabase
+                .from('members')
+                .select('*')
+                .or(`member_code.eq.${cleanToken},member_code.ilike.${cleanToken}`)
+                .limit(1)
+                .maybeSingle();
+              if (m2) memberFound = m2;
+            } catch {}
+          }
 
-          if (memberCard) {
-            card = memberCard;
+          if (memberFound) {
+            member = memberFound;
+            const { data: memberCard } = await adminSupabase
+              .from('cards')
+              .select('*')
+              .eq('member_id', memberFound.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .maybeSingle();
+
+            if (memberCard) {
+              card = memberCard;
+            }
           }
         }
       }
@@ -228,16 +233,20 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
             ? 'expiree'
             : 'revoquee';
 
-        try {
-          await adminSupabase.from('verification_logs').insert({
-            card_id: card.id,
-            result: logResult,
-            token_hash_lookup: tokenHash,
-            ip_address_hash: hashedIp || null,
-            user_agent: fullAuditAgent,
-          });
-        } catch (logErr) {
-          console.error('Erreur log verification:', logErr);
+        // Enregistrement dans les logs de vérification UNIQUEMENT pour les agents connectés
+        // afin d'éviter de remplir la base de données avec des scans externes répétés
+        if (isAuthenticatedScanner) {
+          try {
+            await adminSupabase.from('verification_logs').insert({
+              card_id: card.id,
+              result: logResult,
+              token_hash_lookup: tokenHash,
+              ip_address_hash: hashedIp || null,
+              user_agent: fullAuditAgent,
+            });
+          } catch (logErr) {
+            console.error('Erreur log verification:', logErr);
+          }
         }
       } else {
         // La carte n'existe PAS du tout dans le système (lien externe, QR Code étranger ou contrefaçon)
@@ -249,15 +258,17 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
             : 'Cette carte n\'existe pas dans le système officiel de Welj.',
         };
 
-        try {
-          await adminSupabase.from('verification_logs').insert({
-            card_id: null,
-            result: 'inconnue',
-            token_hash_lookup: tokenHash,
-            ip_address_hash: hashedIp || null,
-            user_agent: fullAuditAgent,
-          });
-        } catch {}
+        if (isAuthenticatedScanner) {
+          try {
+            await adminSupabase.from('verification_logs').insert({
+              card_id: null,
+              result: 'inconnue',
+              token_hash_lookup: tokenHash,
+              ip_address_hash: hashedIp || null,
+              user_agent: fullAuditAgent,
+            });
+          } catch {}
+        }
       }
     } catch (err) {
       console.error('Erreur lors de la vérification:', err);

@@ -755,7 +755,7 @@ export default function PublicVerifyPage() {
                 <button
                   type="button"
                   onClick={handleToggleZoom}
-                  className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-200 border border-emerald-500/40 text-[11px] font-bold transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-transparent hover:bg-white/5 border border-stone-800 hover:border-stone-600 text-[11px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
                   title="Agrandir le QR Code (1x, 2x, 3x) pour éviter d'approcher la carte trop près"
                 >
                   <ZoomIn size={12} />
@@ -766,10 +766,10 @@ export default function PublicVerifyPage() {
                 <button
                   type="button"
                   onClick={() => setScreenTorch(!screenTorch)}
-                  className={`inline-flex items-center py-1 px-2.5 rounded-lg text-[11px] font-semibold transition-all cursor-pointer border ${
+                  className={`inline-flex items-center py-1 px-2.5 rounded-lg text-[11px] font-medium transition-colors cursor-pointer border ${
                     screenTorch
-                      ? 'bg-amber-400 text-slate-950 border-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
-                      : 'bg-transparent hover:bg-slate-800/40 text-amber-300 border-slate-700'
+                      ? 'bg-transparent border-amber-400 text-amber-300 font-bold'
+                      : 'bg-transparent hover:bg-white/5 border-stone-800 hover:border-stone-600 text-slate-300 hover:text-white'
                   }`}
                   title="Allume un fond blanc lumineux pour éclairer la carte dans l'obscurité"
                 >
@@ -780,7 +780,7 @@ export default function PublicVerifyPage() {
                   <button
                     type="button"
                     onClick={handleSwitchCamera}
-                    className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-emerald-300 hover:text-white border border-slate-700 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 py-1 px-2.5 rounded-lg bg-transparent hover:bg-white/5 border border-stone-800 hover:border-stone-600 text-[11px] font-medium text-slate-300 hover:text-white transition-colors cursor-pointer"
                     title="Changer de caméra"
                   >
                     <SwitchCamera size={13} />
