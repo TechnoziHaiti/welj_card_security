@@ -364,6 +364,42 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
     }
   };
 
+  // Suppression définitive du membre et révocation automatique de toutes ses cartes
+  const handleDeleteMember = async () => {
+    const memberName = `${member.first_name} ${member.last_name}`;
+    const confirmed = typeof window !== 'undefined'
+      ? window.confirm(
+          `CONFIRMATION DE SUPPRESSION DÉFINITIVE\n\n` +
+          `Voulez-vous vraiment supprimer le membre ${memberName} (${member.client_code || member.member_code}) ?\n\n` +
+          `⚠️ CONSÉQUENCE IMMÉDIATE :\n` +
+          `• Toutes ses cartes Welj seront immédiatement RÉVOQUÉES et INVALIDÉES.\n` +
+          `• Tout scan futur affichera : "Ce compte n'est plus valide".\n\n` +
+          `Cliquez sur OK pour confirmer la suppression définitive.`
+        )
+      : true;
+
+    if (!confirmed) return;
+
+    setActionLoading(true);
+    setMessage(null);
+
+    try {
+      const res = await fetch(`/api/admin/members/${member.id}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Erreur lors de la suppression du membre.');
+      }
+
+      router.push('/admin/members');
+      router.refresh();
+    } catch (err: any) {
+      setMessage({ text: err?.message || 'Erreur lors de la suppression.', type: 'error' });
+      setActionLoading(false);
+    }
+  };
+
   // Carte officielle du membre (active, suspendue, désactivée ou la plus récente)
   const activeCard =
     cards.find((c) => {
@@ -495,6 +531,15 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
 
               <div>
                 <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+                  Date d&apos;Adhésion
+                </span>
+                <span className="font-semibold text-slate-900 text-xs mt-0.5 block">
+                  {formatDateFr(member.created_at)}
+                </span>
+              </div>
+
+              <div>
+                <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
                   Statut du Compte
                 </span>
                 <div className="mt-1 flex items-center gap-2">
@@ -508,42 +553,33 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                     Actions sur le compte
                   </span>
                   <div className="flex flex-wrap gap-2">
-                    {member.status === 'inactif' ? (
+                    {member.status === 'inactif' || member.status === 'suspendu' ? (
                       <button
                         onClick={() => handleToggleMemberStatus('actif')}
                         disabled={actionLoading}
                         className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-[11px] shadow-sm border border-emerald-600 transition-colors"
                       >
-                        Réactiver le compte
-                      </button>
-                    ) : member.status === 'suspendu' ? (
-                      <button
-                        onClick={() => handleToggleMemberStatus('actif')}
-                        disabled={actionLoading}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold text-[11px] shadow-sm border border-emerald-600 transition-colors"
-                      >
-                        Lever la suspension
+                        {member.status === 'suspendu' ? 'Lever la suspension' : 'Réactiver le compte'}
                       </button>
                     ) : (
-                      <>
-                        <button
-                          onClick={() => handleToggleMemberStatus('inactif')}
-                          disabled={actionLoading}
-                          className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold text-[11px] shadow-sm border border-amber-500 transition-colors"
-                          title="Pour carte perdue ou mise en veille administrative"
-                        >
-                          Désactiver le compte
-                        </button>
-                        <button
-                          onClick={() => handleToggleMemberStatus('suspendu')}
-                          disabled={actionLoading}
-                          className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-[11px] shadow-sm border border-red-600 transition-colors"
-                          title="En cas de fraude, enquête ou litige"
-                        >
-                          Suspendre
-                        </button>
-                      </>
+                      <button
+                        onClick={() => handleToggleMemberStatus('inactif')}
+                        disabled={actionLoading}
+                        className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 active:bg-amber-700 text-white font-bold text-[11px] shadow-sm border border-amber-500 transition-colors"
+                        title="Désactiver le compte temporairement"
+                      >
+                        Désactiver le compte
+                      </button>
                     )}
+                    <button
+                      onClick={handleDeleteMember}
+                      disabled={actionLoading}
+                      className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 active:bg-red-800 text-white font-bold text-[11px] shadow-sm border border-red-600 transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                      title="Supprimer définitivement le membre et révoquer toutes ses cartes"
+                    >
+                      <Trash2 size={13} />
+                      <span>Supprimer</span>
+                    </button>
                   </div>
                 </div>
               )}
@@ -700,7 +736,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                     <div className="space-y-2">
                       <div>
                         <span className="block text-[11px] sm:text-xs font-bold text-[#0f3b75]">
-                          Date d&apos;adhésion
+                          Date de création
                         </span>
                         <span className="block text-xs sm:text-sm font-bold text-slate-900 font-mono tracking-tight">
                           {formatDateShortFr(activeCard.created_at)}
@@ -808,7 +844,7 @@ export function MemberDetailClient({ initialMember, initialCards, isAdmin = true
                     <tr className="bg-stone-100 border-b border-stone-200 text-stone-600 font-semibold uppercase text-[10px]">
                       <th className="py-2.5 px-3">Identifiant</th>
                       <th className="py-2.5 px-3">Statut</th>
-                      <th className="py-2.5 px-3">Date d&apos;Adhésion</th>
+                      <th className="py-2.5 px-3">Date de Création</th>
                       <th className="py-2.5 px-3">Date d&apos;Expiration</th>
                       <th className="py-2.5 px-3">Révocation / Remplacement</th>
                       {isAdmin && <th className="py-2.5 px-3 text-right">Actions</th>}

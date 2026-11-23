@@ -20,7 +20,7 @@ import {
 import { StatusBadge } from '@/components/StatusBadge';
 import { QrCodeModal } from '@/components/QrCodeModal';
 import { createClient } from '@/lib/supabase/client';
-import { formatDateFr, isExpiringSoon, getEffectiveCardStatus } from '@/lib/dates';
+import { formatDateFr, formatDateShortFr, isExpiringSoon, getEffectiveCardStatus } from '@/lib/dates';
 import { generateSecureToken, hashToken, generateCardIdentifier } from '@/lib/crypto';
 import { calculateExpirationDate } from '@/lib/dates';
 import { Card, Member } from '@/types/database';
@@ -295,7 +295,7 @@ export function CardsListClient({ initialCards, currentStatusFilter, searchQuery
                   <th className="py-3.5 px-4">Identifiant Carte</th>
                   <th className="py-3.5 px-4">Titulaire (Membre)</th>
                   <th className="py-3.5 px-4">Statut</th>
-                  <th className="py-3.5 px-4">Date d&apos;Adhésion</th>
+                  <th className="py-3.5 px-4">Date de Création</th>
                   <th className="py-3.5 px-4">Expiration (1 an)</th>
                   <th className="py-3.5 px-4 text-center">QR Code</th>
                   <th className="py-3.5 px-4 text-right">Actions</th>

@@ -177,6 +177,50 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
         }
       }
 
+      // Étape 4.5 : Si la carte n'est pas dans la table cards, vérifier si elle a été révoquée suite à la suppression du membre
+      if (!card) {
+        const candidateWithoutPrefix = cleanToken.replace(/^WELJ-/i, '');
+        const { data: revokedLog } = await adminSupabase
+          .from('verification_logs')
+          .select('*')
+          .eq('result', 'revoquee')
+          .or(
+            `token_hash_lookup.eq.${cleanToken},token_hash_lookup.eq.${tokenHash},token_hash_lookup.eq.WELJ-${cleanToken},token_hash_lookup.eq.WELJ-${candidateWithoutPrefix},token_hash_lookup.ilike.${cleanToken},token_hash_lookup.ilike.WELJ-${cleanToken}`
+          )
+          .order('verified_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (revokedLog) {
+          let titulaire = 'Membre Welj';
+          let cardIdent = cleanToken.startsWith('WELJ-') ? cleanToken : `WELJ-${cleanToken}`;
+          let clientCd = cleanToken.replace(/^WELJ-/i, '');
+
+          if (revokedLog.user_agent && revokedLog.user_agent.includes('DELETED_MEMBER:')) {
+            const parts = revokedLog.user_agent.split('|');
+            titulaire = parts[0]?.replace('DELETED_MEMBER:', '')?.trim() || titulaire;
+            if (parts[1] && parts[1].includes('Card:')) {
+              cardIdent = parts[1].replace('Card:', '').trim();
+            }
+          }
+
+          verification = {
+            success: false,
+            result: 'revoquee',
+            message: "Ce compte n'est plus valide.",
+            card_identifier: cardIdent,
+            first_name: titulaire,
+            last_name: '',
+            client_code: clientCd,
+            member_code: clientCd,
+            account_type: 'Platinum',
+            created_at: revokedLog.verified_at,
+            expires_at: revokedLog.verified_at,
+            revoked_at: revokedLog.verified_at,
+          };
+        }
+      }
+
       // Étape 5 : Analyse précise et infaillible du statut
       if (card) {
         const isRevoked = card.status === 'revoquee';
@@ -188,20 +232,20 @@ export default async function VerifyTokenPage({ params, searchParams }: PageProp
         let message = 'Carte officielle valide et certifiée.';
 
         // Hiérarchie des statuts selon les règles métier Welj :
-        // 1. Fraude / Litige -> "Ce compte est suspendu"
-        // 2. Carte perdue / Désactivation -> "Ce compte est désactivé"
-        // 3. Carte révoquée -> "Ce compte n'est plus valide"
+        // 1. Carte révoquée / Membre supprimé -> "Ce compte n'est plus valide"
+        // 2. Fraude / Litige -> "Ce compte est suspendu"
+        // 3. Carte perdue / Désactivation -> "Ce compte est désactivé"
         // 4. Échéance dépassée -> "Cette carte est expirée"
         // 5. Compte & Carte normaux -> "Carte authentique et active"
-        if (isMemberSuspended) {
+        if (isRevoked) {
+          computedResult = 'revoquee';
+          message = 'Ce compte n\'est plus valide.';
+        } else if (isMemberSuspended) {
           computedResult = 'suspendu';
           message = 'Ce compte est suspendu.';
         } else if (isMemberInactive) {
           computedResult = 'desactive';
           message = 'Ce compte est désactivé.';
-        } else if (isRevoked) {
-          computedResult = 'revoquee';
-          message = 'Ce compte n\'est plus valide.';
         } else if (isExpired) {
           computedResult = 'expiree';
           message = 'Cette carte est expirée.';
