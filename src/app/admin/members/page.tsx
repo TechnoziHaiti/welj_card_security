@@ -5,7 +5,6 @@ import {
   UserPlus,
   Search,
   Filter,
-  CreditCard,
   ChevronRight,
   Shield,
   ArrowRight,
@@ -222,8 +221,7 @@ export default async function MembersListPage({ searchParams }: PageProps) {
                       </td>
                       <td className="py-3 px-4">
                         {activeCard ? (
-                          <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-emerald-600">
-                            <CreditCard size={13} />
+                          <span className="font-mono font-bold text-emerald-600 text-[11px]">
                             {activeCard.card_identifier}
                           </span>
                         ) : hasCards ? (
